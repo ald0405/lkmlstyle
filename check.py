@@ -61,7 +61,7 @@ class PatternMatchRule(Rule):
 
 @dataclass(frozen=True)
 class ParameterRule(Rule):
-    criteria: tuple[partial[bool]]
+    criteria: partial[bool]
     negative: Optional[bool] = False
 
     def followed_by(self, node: SyntaxNode) -> bool:
@@ -88,7 +88,7 @@ def track_lineage(method):
 
 
 class StyleCheckVisitor(BasicVisitor):
-    def __init__(self, rules: tuple[PatternMatchRule, ...]):
+    def __init__(self, rules: tuple[Rule, ...]):
         super().__init__()
         self.rules: tuple[Rule, ...] = rules
         self._lineage: deque = deque()  # Faster than list for append/pop
@@ -113,7 +113,7 @@ class StyleCheckVisitor(BasicVisitor):
     def _is_selected(self, rule: Rule) -> bool:
         return self.lineage.endswith(rule.select)
 
-    def _test_rule(self, rule: PatternMatchRule, node: SyntaxNode) -> None:
+    def _test_rule(self, rule: Rule, node: SyntaxNode) -> None:
         if rule.applies_to(node) and not rule.followed_by(node):
             self.violations.append(f"[{rule.code}] {rule.title}")
 
