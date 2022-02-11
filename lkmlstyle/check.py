@@ -1,9 +1,8 @@
-# TODO: Support line numbers and context preview for errors
-# TODO: Support rules as YAML
 # TODO: Support ordering rule type
 # TODO: Support whitespace rule type
-# TODO: Support file-based rules
+# TODO: Support rules as YAML
 # TODO: Write test cases for each rule
+# TODO: Add basic CLI
 
 import yaml
 from collections import deque
@@ -304,25 +303,9 @@ default_rules = (
     primary_key_dimensions_hidden,
 )
 
-with open("test.view.lkml", "r") as file:
-    text = file.read()
 
-tree = lkml.parse(text)
-lines = text.split("\n")
-
-visitor = StyleCheckVisitor(rules=default_rules)
-tree.accept(visitor)
-
-for violation in visitor.violations:
-    code, title, line_number = violation
-    print(f"[{code}] {title}")
-    print("-" * 60)
-
-    for n in range(line_number - 1, line_number + 3):
-        if n <= 0:
-            continue
-        if n == line_number:
-            print(f"{n:<4} >| {lines[n - 1]}")
-        else:
-            print(f"{n:<4}  | {lines[n - 1]}")
-    print("\n")
+def check(text: str) -> list[tuple]:
+    tree = lkml.parse(text)
+    visitor = StyleCheckVisitor(rules=default_rules)
+    tree.accept(visitor)
+    return visitor.violations
