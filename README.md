@@ -15,3 +15,11 @@ pip install -e .
 ```shell
 lkmlstyle [FILE_NAME]
 ```
+
+## TODO
+
+- [ ] Support ordering rule type
+- [ ] Support whitespace rule type
+- [ ] Support rules as YAML
+- [ ] Write test cases for each rule
+- [ ] Add basic CLI
