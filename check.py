@@ -115,7 +115,7 @@ class StyleCheckVisitor(BasicVisitor):
 
     def _test_rule(self, rule: Rule, node: SyntaxNode) -> None:
         if rule.applies_to(node) and not rule.followed_by(node):
-            self.violations.append(f"[{rule.code}] {rule.title}")
+            self.violations.append((rule.code, rule.title, node.line_number))
 
 
 def node_has_valid_class(node: SyntaxNode, node_type: type) -> bool:
@@ -300,16 +300,29 @@ default_rules = (
     yesno_dimension_prefix,
     table_ref_in_measure,
     wildcard_include,
-    labels_are_title_cased,
     dimension_group_suffix,
     primary_key_dimensions_hidden,
 )
 
 with open("test.view.lkml", "r") as file:
-    tree = lkml.parse(file.read())
+    text = file.read()
 
-visitor = StyleCheckVisitor(rules=(primary_key_dimensions_hidden,))
+tree = lkml.parse(text)
+lines = text.split("\n")
+
+visitor = StyleCheckVisitor(rules=default_rules)
 tree.accept(visitor)
 
 for violation in visitor.violations:
-    print(violation)
+    code, title, line_number = violation
+    print(f"[{code}] {title}")
+    print("-" * 60)
+
+    for n in range(line_number - 2, line_number + 2):
+        if n < 0:
+            continue
+        if n == line_number - 1:
+            print(f"{n:<4} >| {lines[n]}")
+        else:
+            print(f"{n:<4}  | {lines[n]}")
+    print("\n")
