@@ -6,7 +6,7 @@ from lkml.tree import SyntaxNode, SyntaxToken, ContainerNode
 from lkmlstyle.rules import (
     Rule,
     OrderRule,
-    default_rules,
+    RULES_BY_CODE,
 )
 
 
@@ -58,6 +58,7 @@ class StyleCheckVisitor(BasicVisitor):
                             self.violations.append(
                                 (rule.code, rule.title, node.line_number)
                             )
+                    # TODO: This needs to be tracked by rule
                     self.prev = node
 
         if node.children:
@@ -68,8 +69,17 @@ class StyleCheckVisitor(BasicVisitor):
         return self.lineage.endswith(rule.select)
 
 
-def check(text: str) -> list[tuple]:
+def ignore_rules(codes: Optional[tuple[str]]) -> tuple[Rule]:
+    if not codes:
+        return tuple(RULES_BY_CODE.values())
+    rules = RULES_BY_CODE.copy()
+    for code in codes:
+        del rules[code]
+    return tuple(rules.values())
+
+
+def check(text: str, ignore: Optional[tuple[str]]) -> list[tuple]:
     tree = lkml.parse(text)
-    visitor = StyleCheckVisitor(rules=default_rules)
+    visitor = StyleCheckVisitor(rules=ignore_rules(ignore))
     tree.accept(visitor)
     return visitor.violations

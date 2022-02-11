@@ -141,174 +141,160 @@ def block_has_valid_parameter(
     return not valid if negative else valid
 
 
-count_measure_prefix = PatternMatchRule(
-    title="Name of count measure doesn't start with 'count_'",
-    code="M100",
-    select="measure",
-    filters=(partial(block_has_valid_parameter, parameter_name="type", value="count"),),
-    regex=r"^count_",
-)
-
-sum_measure_prefix = PatternMatchRule(
-    title="Name of sum measure doesn't start with 'total_'",
-    code="M101",
-    select="measure",
-    filters=(partial(block_has_valid_parameter, parameter_name="type", value="sum"),),
-    regex=r"^total_",
-)
-
-avg_measure_prefix = PatternMatchRule(
-    title="Name of average measure doesn't start with 'avg_'",
-    code="M102",
-    select="measure",
-    filters=(
-        partial(block_has_valid_parameter, parameter_name="type", value="average"),
+ALL_RULES = (
+    PatternMatchRule(
+        title="Name of count measure doesn't start with 'count_'",
+        code="M100",
+        select="measure",
+        filters=(
+            partial(block_has_valid_parameter, parameter_name="type", value="count"),
+        ),
+        regex=r"^count_",
     ),
-    regex=r"^(?:avg|average)_",
-)
-
-yesno_dimension_prefix = PatternMatchRule(
-    title="Yesno dimension doesn't start with 'is_' or 'has_'",
-    code="D100",
-    select="dimension",
-    filters=(partial(block_has_valid_parameter, parameter_name="type", value="yesno"),),
-    regex=r"^(?:is|has)_",
-)
-
-table_ref_in_measure = PatternMatchRule(
-    title="Measure references table column directly",
-    code="M110",
-    select="measure.sql",
-    filters=tuple(),
-    regex=r"\$\{TABLE\}",
-    negative=True,
-)
-
-wildcard_include = PatternMatchRule(
-    title="Don't include all views",
-    code="V100",
-    select="include",
-    filters=tuple(),
-    regex=r"^\*\.view",
-    negative=True,
-)
-
-default_dimension_type = PatternMatchRule(
-    title="Unnecessary type specification for string dimension",
-    code="D101",
-    select="dimension.type",
-    filters=tuple(),
-    regex=r"^string$",
-    negative=True,
-)
-
-dimension_group_suffix = PatternMatchRule(
-    title="Dimension group name ends with redundant word",
-    code="D200",
-    select="dimension_group",
-    filters=tuple(),
-    regex=r"_(?:at|date|time)$",
-    negative=True,
-)
-
-explicit_fields_for_explore = ParameterRule(
-    title="Explore doesn't declare fields",
-    code="E100",
-    select="explore",
-    filters=(),
-    criteria=partial(block_has_valid_parameter, parameter_name="fields"),
-)
-
-# This probably is not the ideal behavior, it enforces strict title case, when in
-# reality people probably still want to lowercase words like 'and', 'is', 'or', etc.
-labels_are_title_cased = PatternMatchRule(
-    title="Label is not title-cased",
-    code="G100",
-    select="label",
-    filters=tuple(),
-    regex=r"^(?:[A-Z][^\s]*\s?)+$",
-)
-
-non_hidden_dimensions_have_description = ParameterRule(
-    title="Non-hidden dimension missing description",
-    code="D110",
-    select="dimension",
-    filters=tuple(
-        [
-            partial(
-                block_has_valid_parameter,
-                parameter_name="hidden",
-                value="yes",
-                negative=True,
-            )
-        ],
+    PatternMatchRule(
+        title="Name of sum measure doesn't start with 'total_'",
+        code="M101",
+        select="measure",
+        filters=(
+            partial(block_has_valid_parameter, parameter_name="type", value="sum"),
+        ),
+        regex=r"^total_",
     ),
-    criteria=partial(block_has_valid_parameter, parameter_name="description"),
-)
-
-view_has_primary_key = ParameterRule(
-    title="View must define at least one primary key dimension",
-    code="V110",
-    select="view",
-    filters=tuple(),
-    criteria=partial(
-        node_has_at_least_one_valid_child,
-        is_valid=partial(
-            block_has_valid_parameter, parameter_name="primary_key", value="yes"
+    PatternMatchRule(
+        title="Name of average measure doesn't start with 'avg_'",
+        code="M102",
+        select="measure",
+        filters=(
+            partial(block_has_valid_parameter, parameter_name="type", value="average"),
+        ),
+        regex=r"^(?:avg|average)_",
+    ),
+    PatternMatchRule(
+        title="Yesno dimension doesn't start with 'is_' or 'has_'",
+        code="D100",
+        select="dimension",
+        filters=(
+            partial(block_has_valid_parameter, parameter_name="type", value="yesno"),
+        ),
+        regex=r"^(?:is|has)_",
+    ),
+    PatternMatchRule(
+        title="Measure references table column directly",
+        code="M110",
+        select="measure.sql",
+        filters=tuple(),
+        regex=r"\$\{TABLE\}",
+        negative=True,
+    ),
+    PatternMatchRule(
+        title="Don't include all views",
+        code="V100",
+        select="include",
+        filters=tuple(),
+        regex=r"^\*\.view",
+        negative=True,
+    ),
+    PatternMatchRule(
+        title="Unnecessary type specification for string dimension",
+        code="D101",
+        select="dimension.type",
+        filters=tuple(),
+        regex=r"^string$",
+        negative=True,
+    ),
+    PatternMatchRule(
+        title="Dimension group name ends with redundant word",
+        code="D200",
+        select="dimension_group",
+        filters=tuple(),
+        regex=r"_(?:at|date|time)$",
+        negative=True,
+    ),
+    ParameterRule(
+        title="Explore doesn't declare fields",
+        code="E100",
+        select="explore",
+        filters=(),
+        criteria=partial(block_has_valid_parameter, parameter_name="fields"),
+    ),
+    # This probably is not the ideal behavior, it enforces strict title case, when in
+    # reality people probably still want to lowercase words like 'and', 'is', 'or', etc.
+    PatternMatchRule(
+        title="Label is not title-cased",
+        code="G100",
+        select="label",
+        filters=tuple(),
+        regex=r"^(?:[A-Z][^\s]*\s?)+$",
+    ),
+    ParameterRule(
+        title="Non-hidden dimension missing description",
+        code="D110",
+        select="dimension",
+        filters=tuple(
+            [
+                partial(
+                    block_has_valid_parameter,
+                    parameter_name="hidden",
+                    value="yes",
+                    negative=True,
+                )
+            ],
+        ),
+        criteria=partial(block_has_valid_parameter, parameter_name="description"),
+    ),
+    ParameterRule(
+        title="View must define at least one primary key dimension",
+        code="V110",
+        select="view",
+        filters=tuple(),
+        criteria=partial(
+            node_has_at_least_one_valid_child,
+            is_valid=partial(
+                block_has_valid_parameter, parameter_name="primary_key", value="yes"
+            ),
         ),
     ),
-)
-
-primary_key_dimensions_hidden = ParameterRule(
-    title="Primary key dimension not hidden",
-    code="D102",
-    select="dimension",
-    filters=tuple(
-        [partial(block_has_valid_parameter, parameter_name="primary_key", value="yes")],
+    ParameterRule(
+        title="Primary key dimension not hidden",
+        code="D102",
+        select="dimension",
+        filters=tuple(
+            [
+                partial(
+                    block_has_valid_parameter, parameter_name="primary_key", value="yes"
+                )
+            ],
+        ),
+        criteria=partial(
+            block_has_valid_parameter,
+            parameter_name="hidden",
+            value="yes",
+            negative=True,
+        ),
     ),
-    criteria=partial(
-        block_has_valid_parameter, parameter_name="hidden", value="yes", negative=True
+    ParameterRule(
+        title="Count measure doesn't specify a filter",
+        code="M200",
+        select="measure",
+        filters=tuple(
+            [partial(block_has_valid_parameter, parameter_name="type", value="count")],
+        ),
+        criteria=partial(block_has_valid_parameter, parameter_name="filter"),
+    ),
+    OrderRule(
+        title="Dimension not in alphabetical order",
+        code="D106",
+        select="dimension",
+        filters=tuple(),
+        alphabetical=True,
+    ),
+    OrderRule(
+        title="Measure not in alphabetical order",
+        code="M106",
+        select="measure",
+        filters=tuple(),
+        alphabetical=True,
     ),
 )
 
-count_measure_define_filter = ParameterRule(
-    title="Count measure doesn't specify a filter",
-    code="M200",
-    select="measure",
-    filters=tuple(
-        [partial(block_has_valid_parameter, parameter_name="type", value="count")],
-    ),
-    criteria=partial(block_has_valid_parameter, parameter_name="filter"),
-)
-
-order_dimensions_alphabetically = OrderRule(
-    title="Dimension not in alphabetical order",
-    code="D106",
-    select="dimension",
-    filters=tuple(),
-    alphabetical=True,
-)
-
-order_measures_alphabetically = OrderRule(
-    title="Dimension not in alphabetical order",
-    code="M106",
-    select="measure",
-    filters=tuple(),
-    alphabetical=True,
-)
-
-default_rules = (
-    view_has_primary_key,
-    count_measure_prefix,
-    sum_measure_prefix,
-    avg_measure_prefix,
-    yesno_dimension_prefix,
-    table_ref_in_measure,
-    wildcard_include,
-    dimension_group_suffix,
-    primary_key_dimensions_hidden,
-    count_measure_define_filter,
-    non_hidden_dimensions_have_description,
-    order_dimensions_alphabetically,
-    order_measures_alphabetically,
-)
+RULES_BY_CODE = {rule.code: rule for rule in ALL_RULES}

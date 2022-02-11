@@ -9,12 +9,13 @@ def main():
     console = Console(stderr=True)
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=pathlib.Path)
+    parser.add_argument("--ignore", nargs="+", required=False)
     args = parser.parse_args()
 
     with args.file.open("r") as file:
         text = file.read()
 
-    violations = check(text)
+    violations = check(text, ignore=args.ignore)
 
     lines = text.split("\n")
 
