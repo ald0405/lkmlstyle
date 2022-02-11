@@ -183,8 +183,10 @@ avg_measure_prefix = PatternMatchRule(
     title="Name of average measure doesn't start with 'avg_'",
     code="M102",
     select="measure",
-    filters=(partial(block_has_valid_parameter, parameter_name="type", value="sum"),),
-    regex=r"^avg_",
+    filters=(
+        partial(block_has_valid_parameter, parameter_name="type", value="average"),
+    ),
+    regex=r"^(?:avg|average)_",
 )
 
 yesno_dimension_prefix = PatternMatchRule(
