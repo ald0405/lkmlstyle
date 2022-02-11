@@ -197,7 +197,7 @@ yesno_dimension_prefix = PatternMatchRule(
 )
 
 table_ref_in_measure = PatternMatchRule(
-    title="Measure contains '${TABLE}' reference",
+    title="Measure references table column directly",
     code="M110",
     select="measure.sql",
     filters=tuple(),
