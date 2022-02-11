@@ -40,3 +40,7 @@ def main():
                     f"[dim]{n:<4}[/dim]  | [dim]{lines[n - 1]}[/dim]", highlight=False
                 )
         console.print()
+
+
+if __name__ == "__main__":
+    main()

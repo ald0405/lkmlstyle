@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Callable
+from typing import Optional, Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
 from lkml.tree import SyntaxNode, PairNode, BlockNode, ContainerNode
@@ -18,6 +18,14 @@ class Rule:
     def followed_by(self, node: SyntaxNode) -> bool:
         raise NotImplementedError
 
+    def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+        if isinstance(node, PairNode):
+            return node.value.value
+        elif isinstance(node, BlockNode):
+            return node.name.value
+        else:
+            return None
+
 
 @dataclass(frozen=True)
 class PatternMatchRule(Rule):
@@ -33,11 +41,8 @@ class PatternMatchRule(Rule):
         return not matched if self.negative else matched
 
     def followed_by(self, node: SyntaxNode) -> bool:
-        if isinstance(node, PairNode):
-            value = node.value.value
-        elif isinstance(node, BlockNode):
-            value = node.name.value
-        else:
+        value = self.get_node_value(node)
+        if value is None:
             return True
         return self._matches(value)
 
@@ -50,6 +55,44 @@ class ParameterRule(Rule):
     def followed_by(self, node: SyntaxNode) -> bool:
         matched = self.criteria(node)
         return not matched if self.negative else matched
+
+
+@dataclass(frozen=True)
+class OrderRule(Rule):
+    alphabetical: bool = False
+    is_first: bool = False
+    use_key: bool = True
+    order: Optional[Iterable[str]] = None
+
+    def __post_init__(self):
+        if (self.alphabetical + self.is_first + bool(self.order)) > 1:
+            raise AttributeError(
+                "Only one of 'alphabetical', 'is_first', or 'order' can be defined as "
+                "the sort order"
+            )
+
+    def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+        if isinstance(node, PairNode):
+            return node.type.value if self.use_key else node.value.value
+        elif isinstance(node, BlockNode):
+            return node.name.value
+        else:
+            return None
+
+    def followed_by(self, node: SyntaxNode, prev: Optional[SyntaxNode]) -> bool:
+        if self.alphabetical:
+            if prev:
+                return self.get_node_value(node) > self.get_node_value(prev)
+            else:
+                return True
+        elif self.is_first:
+            return prev is None
+        elif self.order:
+            if prev:
+                subset = set(self.get_node_value(prev), self.get_node_value(node))
+                return subset in set(self.order)
+            else:
+                return self.get_node_value(node) == self.order[0]
 
 
 def node_has_valid_class(node: SyntaxNode, node_type: type) -> bool:
@@ -228,6 +271,32 @@ primary_key_dimensions_hidden = ParameterRule(
     ),
 )
 
+count_measure_define_filter = ParameterRule(
+    title="Count measure doesn't specify a filter",
+    code="M200",
+    select="measure",
+    filters=tuple(
+        [partial(block_has_valid_parameter, parameter_name="type", value="count")],
+    ),
+    criteria=partial(block_has_valid_parameter, parameter_name="filter"),
+)
+
+order_dimensions_alphabetically = OrderRule(
+    title="Dimension not in alphabetical order",
+    code="D106",
+    select="dimension",
+    filters=tuple(),
+    alphabetical=True,
+)
+
+order_measures_alphabetically = OrderRule(
+    title="Dimension not in alphabetical order",
+    code="M106",
+    select="measure",
+    filters=tuple(),
+    alphabetical=True,
+)
+
 default_rules = (
     view_has_primary_key,
     count_measure_prefix,
@@ -238,4 +307,8 @@ default_rules = (
     wildcard_include,
     dimension_group_suffix,
     primary_key_dimensions_hidden,
+    count_measure_define_filter,
+    non_hidden_dimensions_have_description,
+    order_dimensions_alphabetically,
+    order_measures_alphabetically,
 )

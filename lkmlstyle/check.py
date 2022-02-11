@@ -1,12 +1,13 @@
 from collections import deque
-from typing import Union
+from typing import Union, Optional
 import lkml
 from lkml.visitors import BasicVisitor
-from lkml.tree import (
-    SyntaxNode,
-    SyntaxToken,
+from lkml.tree import SyntaxNode, SyntaxToken, ContainerNode
+from lkmlstyle.rules import (
+    Rule,
+    OrderRule,
+    default_rules,
 )
-from lkmlstyle.rules import Rule, default_rules
 
 
 def track_lineage(method):
@@ -33,6 +34,7 @@ class StyleCheckVisitor(BasicVisitor):
         self.rules: tuple[Rule, ...] = rules
         self._lineage: deque = deque()  # Faster than list for append/pop
         self.violations: list[str] = []
+        self.prev: Optional[SyntaxNode] = None
 
     @property
     def lineage(self) -> str:
@@ -42,20 +44,28 @@ class StyleCheckVisitor(BasicVisitor):
     def _visit(self, node: Union[SyntaxNode, SyntaxToken]) -> None:
         if isinstance(node, SyntaxToken):
             return
-        for rule in self.rules:
-            if self._is_selected(rule):
-                self._test_rule(rule, node)
+
+        if not isinstance(node, ContainerNode):
+            for rule in self.rules:
+                if self._select_current_node(rule):
+                    if rule.applies_to(node):
+                        if isinstance(rule, OrderRule):
+                            violates = not rule.followed_by(node, self.prev)
+                        else:
+                            violates = not rule.followed_by(node)
+
+                        if violates:
+                            self.violations.append(
+                                (rule.code, rule.title, node.line_number)
+                            )
+                    self.prev = node
 
         if node.children:
             for child in node.children:
                 child.accept(self)
 
-    def _is_selected(self, rule: Rule) -> bool:
+    def _select_current_node(self, rule: Rule) -> bool:
         return self.lineage.endswith(rule.select)
-
-    def _test_rule(self, rule: Rule, node: SyntaxNode) -> None:
-        if rule.applies_to(node) and not rule.followed_by(node):
-            self.violations.append((rule.code, rule.title, node.line_number))
 
 
 def check(text: str) -> list[tuple]:
