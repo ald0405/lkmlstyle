@@ -7,9 +7,15 @@ from lkmlstyle.check import check
 
 def main():
     console = Console(stderr=True)
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file", type=pathlib.Path)
-    parser.add_argument("--ignore", nargs="+", required=False)
+    parser = argparse.ArgumentParser(description="A flexible style checker for LookML.")
+    parser.add_argument("file", type=pathlib.Path, help="path to the file to check")
+    parser.add_argument(
+        "--ignore",
+        nargs="+",
+        metavar="CODE",
+        required=False,
+        help="rule codes to exclude from checking, like 'D106' or 'M200'",
+    )
     args = parser.parse_args()
 
     with args.file.open("r") as file:
