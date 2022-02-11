@@ -17,11 +17,15 @@ def main():
     violations = check(text)
 
     lines = text.split("\n")
-    for i, violation in enumerate(violations):
-        code, title, line_number = violation
 
-        if i == 0:
-            console.print("\n")
+    console.print()
+    console.rule(
+        f"Found {len(violations)} LookML style issues",
+        style="#9999ff",
+    )
+    console.print()
+    for violation in violations:
+        code, title, line_number = violation
         console.print(f"{code} [bold red]{title}[/bold red]")
         console.print(f"{args.file}:{line_number}")
         console.rule(style="grey30")
@@ -35,4 +39,4 @@ def main():
                 console.print(
                     f"[dim]{n:<4}[/dim]  | [dim]{lines[n - 1]}[/dim]", highlight=False
                 )
-        console.print("\n")
+        console.print()
