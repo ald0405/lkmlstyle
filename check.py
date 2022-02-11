@@ -318,11 +318,11 @@ for violation in visitor.violations:
     print(f"[{code}] {title}")
     print("-" * 60)
 
-    for n in range(line_number - 2, line_number + 2):
-        if n < 0:
+    for n in range(line_number - 1, line_number + 3):
+        if n <= 0:
             continue
-        if n == line_number - 1:
-            print(f"{n:<4} >| {lines[n]}")
+        if n == line_number:
+            print(f"{n:<4} >| {lines[n - 1]}")
         else:
-            print(f"{n:<4}  | {lines[n]}")
+            print(f"{n:<4}  | {lines[n - 1]}")
     print("\n")
