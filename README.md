@@ -18,8 +18,9 @@ lkmlstyle [FILE_NAME]
 
 ## TODO
 
+- [ ] Write test cases for each rule
 - [ ] Support ordering rule type
 - [ ] Support whitespace rule type
+- [ ] Add rationale to each rule
 - [ ] Support rules as YAML
-- [ ] Write test cases for each rule
-- [ ] Add basic CLI
+- [x] Add basic CLI
