@@ -78,7 +78,7 @@ def ignore_rules(codes: Optional[tuple[str]]) -> tuple[Rule]:
     return tuple(rules.values())
 
 
-def check(text: str, ignore: Optional[tuple[str]]) -> list[tuple]:
+def check(text: str, ignore: Optional[tuple[str]] = None) -> list[tuple]:
     tree = lkml.parse(text)
     visitor = StyleCheckVisitor(rules=ignore_rules(ignore))
     tree.accept(visitor)

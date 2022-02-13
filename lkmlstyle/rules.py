@@ -227,7 +227,7 @@ ALL_RULES = (
         regex=r"^(?:[A-Z][^\s]*\s?)+$",
     ),
     ParameterRule(
-        title="Non-hidden dimension missing description",
+        title="Visible dimension missing description",
         code="D110",
         select="dimension",
         filters=tuple(
