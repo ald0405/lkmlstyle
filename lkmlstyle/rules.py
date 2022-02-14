@@ -297,4 +297,9 @@ ALL_RULES = (
     ),
 )
 
-RULES_BY_CODE = {rule.code: rule for rule in ALL_RULES}
+RULES_BY_CODE = {}
+for rule in ALL_RULES:
+    if rule.code in RULES_BY_CODE:
+        raise KeyError(f"A rule with code {rule.code} already exists")
+    else:
+        RULES_BY_CODE[rule.code] = rule
