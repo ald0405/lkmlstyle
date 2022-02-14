@@ -33,3 +33,9 @@ def test_select_should_exclude_rules(all_rules):
     assert "V100" in rules_to_codes(chosen)
     assert "D102" in rules_to_codes(chosen)
     assert "M110" not in rules_to_codes(chosen)
+
+
+def test_ignore_should_have_precedence(all_rules):
+    chosen = choose_rules(all_rules, select=("V100", "D102"), ignore=("D102",))
+    assert "D102" not in rules_to_codes(chosen)
+    assert "V100" in rules_to_codes(chosen)
