@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Union, Optional
+from typing import Type, Union, Optional
 import lkml
 from lkml.visitors import BasicVisitor
 from lkml.tree import SyntaxNode, SyntaxToken, ContainerNode
@@ -69,17 +69,32 @@ class StyleCheckVisitor(BasicVisitor):
         return self.lineage.endswith(rule.select)
 
 
-def ignore_rules(codes: Optional[tuple[str]]) -> tuple[Rule]:
+def choose_rules(
+    all_rules: dict[str, Rule],
+    ignore: Optional[tuple[str, ...]] = None,
+    select: Optional[tuple[str, ...]] = None,
+) -> tuple[Rule, ...]:
+    if ignore and not isinstance(ignore, tuple):
+        raise TypeError("Codes to ignore must be wrapped in a tuple")
+    if select and not isinstance(select, tuple):
+        raise TypeError("Codes to ignore must be wrapped in a tuple")
+
+    all_codes = set(all_rules.keys())
+    codes = all_codes & set(select or all_codes) - set(ignore or tuple())
     if not codes:
-        return tuple(RULES_BY_CODE.values())
-    rules = RULES_BY_CODE.copy()
+        return tuple(all_rules.values())
+    rules = []
     for code in codes:
-        del rules[code]
-    return tuple(rules.values())
+        rules.append(all_rules[code])
+    return tuple(rules)
 
 
-def check(text: str, ignore: Optional[tuple[str]] = None) -> list[tuple]:
+def check(
+    text: str,
+    ignore: Optional[tuple[str, ...]] = None,
+    select: Optional[tuple[str, ...]] = None,
+) -> list[tuple]:
     tree = lkml.parse(text)
-    visitor = StyleCheckVisitor(rules=ignore_rules(ignore))
+    visitor = StyleCheckVisitor(rules=choose_rules(RULES_BY_CODE, ignore, select))
     tree.accept(visitor)
     return visitor.violations

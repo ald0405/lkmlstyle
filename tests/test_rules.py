@@ -30,5 +30,26 @@ def test_dimension_group_timeframes():
     }
     """
 
-    assert lkmlstyle.check(fails)
-    assert not lkmlstyle.check(passes)
+    assert lkmlstyle.check(fails, select=("D200",))
+    assert not lkmlstyle.check(passes, select=("D200",))
+
+
+def test_measures_only_reference_dimensions():
+    fails = """
+    measure: total_transaction_amount {
+        type: sum
+        sql: ${TABLE}."TRANSACTION.AMOUNT" ;;
+        value_format_name: usd
+    }
+    """
+
+    passes = """
+    measure: total_transaction_amount {
+        type: sum
+        sql: ${transaction_amount} ;;
+        value_format_name: usd
+    }
+    """
+
+    assert lkmlstyle.check(fails, select=("M110",))
+    assert not lkmlstyle.check(passes, select=("M110",))
