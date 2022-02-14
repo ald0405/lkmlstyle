@@ -81,3 +81,26 @@ def test_measures_only_reference_dimensions():
 
     assert lkmlstyle.check(fails, select=("M110",))
     assert not lkmlstyle.check(passes, select=("M110",))
+
+
+def test_wildcard_includes():
+    fails = 'include: "*.view"'
+    passes = 'include: "schema_name.*.view"'
+    assert lkmlstyle.check(fails, select=("V100",))
+    assert not lkmlstyle.check(passes, select=("V100",))
+    assert not lkmlstyle.check("include: view_name.view", select=("V100",))
+
+
+def test_redundant_dimension_type():
+    fails = "dimension: order_id { type: string }"
+    all_passes = ["dimension: order_id { }", "dimension: order_id { type: number }"]
+    assert lkmlstyle.check(fails, select=("D300",))
+    for passes in all_passes:
+        assert not lkmlstyle.check(passes, select=("D300",))
+
+
+def test_explore_must_declare_fields():
+    fails = 'explore: orders { label: "Company Orders" }'
+    passes = "explore: orders { fields: [ALL_FIELDS*] }"
+    assert lkmlstyle.check(fails, select=("E100",))
+    assert not lkmlstyle.check(passes, select=("E100",))
