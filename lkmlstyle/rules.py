@@ -128,14 +128,15 @@ def block_has_valid_parameter(
         return False
 
     def is_valid_param(node: SyntaxNode) -> bool:
-        if not isinstance(node, PairNode):
-            return False
-        elif not node_has_valid_type(node, parameter_name):
-            return False
-        elif value and not pair_has_valid_value(node, value):
-            return False
+        if value:
+            if not isinstance(node, PairNode):
+                return False
+            elif not pair_has_valid_value(node, value):
+                return False
         else:
-            return True
+            if not node_has_valid_type(node, parameter_name):
+                return False
+        return True
 
     valid = node_has_at_least_one_valid_child(block, is_valid_param)
     return not valid if negative else valid
@@ -196,7 +197,7 @@ ALL_RULES = (
     ),
     PatternMatchRule(
         title="Unnecessary type specification for string dimension",
-        code="D101",
+        code="D300",
         select="dimension.type",
         filters=tuple(),
         regex=r"^string$",
@@ -214,7 +215,7 @@ ALL_RULES = (
         title="Explore doesn't declare fields",
         code="E100",
         select="explore",
-        filters=(),
+        filters=tuple(),
         criteria=partial(block_has_valid_parameter, parameter_name="fields"),
     ),
     # This probably is not the ideal behavior, it enforces strict title case, when in
