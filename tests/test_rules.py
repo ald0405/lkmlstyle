@@ -104,3 +104,65 @@ def test_explore_must_declare_fields():
     passes = "explore: orders { fields: [ALL_FIELDS*] }"
     assert lkmlstyle.check(fails, select=("E100",))
     assert not lkmlstyle.check(passes, select=("E100",))
+
+
+def test_visible_dimensions_without_descriptions():
+    all_fails = [
+        """dimension: order_id {
+            type: number
+        }""",
+        """dimension: order_id {
+            hidden: no
+        }""",
+    ]
+    all_passes = [
+        """dimension: order_id {
+            hidden: yes
+            type: number
+        }""",
+        """dimension: order_id {
+            hidden: no
+            description: "Unique identifier for each order"
+        }""",
+        """dimension: order_id {
+            description: "Unique identifier for each order"
+        }""",
+    ]
+    for fails in all_fails:
+        assert lkmlstyle.check(fails, select=("D301",))
+    for passes in all_passes:
+        assert not lkmlstyle.check(passes, select=("D301",))
+
+
+def test_view_defines_at_least_one_primary_key():
+    all_fails = (
+        """
+        view: orders {
+            sql_table_name: `analytics.orders` ;;
+            dimension: order_id {
+                type: number
+            }
+        }
+        """,
+        """
+        view: orders {
+            sql_table_name: `analytics.orders` ;;
+            dimension: order_id {
+                primary_key: no
+                type: number
+            }
+        }
+        """,
+    )
+    passes = """
+    view: orders {
+        sql_table_name: `analytics.orders` ;;
+        dimension: order_id {
+            primary_key: yes
+            type: number
+        }
+    }
+    """
+    for fails in all_fails:
+        assert lkmlstyle.check(fails, select=("V110",))
+    assert not lkmlstyle.check(passes, select=("V110",))

@@ -229,7 +229,7 @@ ALL_RULES = (
     ),
     ParameterRule(
         title="Visible dimension missing description",
-        code="D110",
+        code="D301",
         select="dimension",
         filters=tuple(
             [
