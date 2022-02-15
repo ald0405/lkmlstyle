@@ -230,15 +230,6 @@ ALL_RULES = (
         filters=tuple(),
         criteria=partial(block_has_valid_parameter, parameter_name="fields"),
     ),
-    # This probably is not the ideal behavior, it enforces strict title case, when in
-    # reality people probably still want to lowercase words like 'and', 'is', 'or', etc.
-    PatternMatchRule(
-        title="Label is not title-cased",
-        code="G100",
-        select="label",
-        filters=tuple(),
-        regex=r"^(?:[A-Z][^\s]*\s?)+$",
-    ),
     ParameterRule(
         title="Visible dimension missing description",
         code="D301",
