@@ -146,3 +146,6 @@ cython_debug/
 
 # pyenv
 .python-version
+
+# Project-specific
+spectacles-looker/
