@@ -166,3 +166,40 @@ def test_view_defines_at_least_one_primary_key():
     for fails in all_fails:
         assert lkmlstyle.check(fails, select=("V110",))
     assert not lkmlstyle.check(passes, select=("V110",))
+
+
+def test_primary_key_dimension_hidden():
+    all_fails = (
+        """
+        dimension: order_id {
+            primary_key: yes
+        }
+        """,
+        """
+        dimension: order_id {
+            primary_key: yes
+            hidden: no
+        }
+        """,
+    )
+    passes = """
+    dimension: order_id {
+        primary_key: yes
+        hidden: yes
+    }
+    """
+    for fails in all_fails:
+        assert lkmlstyle.check(fails, select=("D302",))
+    assert not lkmlstyle.check(passes, select=("D302",))
+
+
+def test_count_measures_should_specify_a_filter():
+    ...
+
+
+def test_dimensions_alphabetical():
+    ...
+
+
+def test_measure_alphabetical():
+    ...
