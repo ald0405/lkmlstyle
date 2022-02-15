@@ -286,12 +286,12 @@ ALL_RULES = (
     ),
     ParameterRule(
         title="Count measure doesn't specify a filter",
-        code="M200",
+        code="M111",
         select="measure",
         filters=tuple(
             [partial(block_has_valid_parameter, parameter_name="type", value="count")],
         ),
-        criteria=partial(block_has_valid_parameter, parameter_name="filter"),
+        criteria=partial(block_has_valid_parameter, parameter_name="filters"),
     ),
     OrderRule(
         title="Dimension not in alphabetical order",
