@@ -194,7 +194,22 @@ def test_primary_key_dimension_hidden():
 
 
 def test_count_measures_should_specify_a_filter():
-    ...
+    passes = """
+    measure: count {
+		type: count
+		filters: {
+			field: pk1_user_id
+			value: "NOT NULL"
+		}
+	}
+    """
+    fails = """
+    measure: count {
+		type: count
+	}
+    """
+    assert lkmlstyle.check(fails, select=("M111",))
+    assert not lkmlstyle.check(passes, select=("M111",))
 
 
 def test_dimensions_alphabetical():
