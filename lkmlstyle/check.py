@@ -56,7 +56,12 @@ class StyleCheckVisitor(BasicVisitor):
 
                         if violates:
                             self.violations.append(
-                                (rule.code, rule.title, node.line_number)
+                                (
+                                    rule.code,
+                                    rule.title,
+                                    rule.rationale,
+                                    node.line_number,
+                                )
                             )
                     # TODO: This needs to be tracked by rule
                     self.prev = node

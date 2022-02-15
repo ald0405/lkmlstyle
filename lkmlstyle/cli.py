@@ -1,6 +1,7 @@
 import argparse
 import pathlib
 from rich.markup import escape
+from rich.markdown import Markdown
 from rich.console import Console
 from lkmlstyle.check import check
 
@@ -30,6 +31,11 @@ def main():
         help="only check the specified rule codes, like 'D106' or 'M200'",
         default=[],
     )
+    parser.add_argument(
+        "--show-rationale",
+        action="store_true",
+        help="for each violation, describe why the rule exists",
+    )
     args = parser.parse_args()
 
     paths = []
@@ -53,9 +59,17 @@ def main():
             console.rule(path.name, style="#9999ff")
             console.print()
         for violation in violations:
-            code, title, line_number = violation
+            code, title, rationale, line_number = violation
             console.print(f"{code} [bold red]{title}[/bold red]")
             console.print(f"{path}:{line_number}")
+            if args.show_rationale:
+                console.rule(style="grey30")
+                console.print(
+                    Markdown("**Rationale:** " + rationale),
+                    width=80,
+                    highlight=False,
+                    style="italic",
+                )
             console.rule(style="grey30")
 
             for i, n in enumerate(range(line_number - 1, line_number + 3)):

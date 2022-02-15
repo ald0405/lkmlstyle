@@ -208,8 +208,8 @@ def test_count_measures_should_specify_a_filter():
 		type: count
 	}
     """
-    assert lkmlstyle.check(fails, select=("M111",))
-    assert not lkmlstyle.check(passes, select=("M111",))
+    assert lkmlstyle.check(fails, select=("LAMS:F3",))
+    assert not lkmlstyle.check(passes, select=("LAMS:F3",))
 
 
 def test_dimensions_alphabetical():
