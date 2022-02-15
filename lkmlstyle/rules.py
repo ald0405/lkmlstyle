@@ -1,8 +1,12 @@
 import re
-from typing import Optional, Callable, Iterable
+import typing
+from typing import Optional, Callable, Iterable, Union
 from dataclasses import dataclass
 from functools import partial
-from lkml.tree import SyntaxNode, PairNode, BlockNode, ContainerNode
+from lkml.tree import SyntaxNode, PairNode, BlockNode, ContainerNode, ListNode
+
+
+TypedNode = Union[BlockNode, PairNode, ListNode]
 
 
 @dataclass(frozen=True)
@@ -99,7 +103,7 @@ def node_has_valid_class(node: SyntaxNode, node_type: type) -> bool:
     return isinstance(node, node_type)
 
 
-def node_has_valid_type(node: SyntaxNode, value: str) -> bool:
+def node_has_valid_type(node: TypedNode, value: str) -> bool:
     return node.type.value == value
 
 
@@ -127,21 +131,29 @@ def block_has_valid_parameter(
     if not isinstance(block, BlockNode):
         return False
 
-    def is_valid_param(node: SyntaxNode) -> bool:
+    def is_valid_param(node: TypedNode) -> bool:
+        # Only consider nodes that define a type attribute
+        if not isinstance(node, typing.get_args(TypedNode)):
+            return False
+        if not node_has_valid_type(node, parameter_name):
+            return False
+
         if value:
+            # Can only test value for PairNodes
             if not isinstance(node, PairNode):
                 return False
-            elif not pair_has_valid_value(node, value):
+            if not pair_has_valid_value(node, value):
                 return False
-        else:
-            if not node_has_valid_type(node, parameter_name):
-                return False
+
         return True
 
     valid = node_has_at_least_one_valid_child(block, is_valid_param)
     return not valid if negative else valid
 
 
+# Rules define the criteria for the passing state
+# For example, a node will pass if it a) doesn't meet the `select` and `filters`
+# or it does, but also passes the regex, criteria, order, etc. of the rule
 ALL_RULES = (
     PatternMatchRule(
         title="Name of count measure doesn't start with 'count_'",
@@ -257,7 +269,7 @@ ALL_RULES = (
     ),
     ParameterRule(
         title="Primary key dimension not hidden",
-        code="D102",
+        code="D302",
         select="dimension",
         filters=tuple(
             [
@@ -270,7 +282,6 @@ ALL_RULES = (
             block_has_valid_parameter,
             parameter_name="hidden",
             value="yes",
-            negative=True,
         ),
     ),
     ParameterRule(
