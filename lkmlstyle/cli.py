@@ -7,7 +7,7 @@ from lkmlstyle.check import check
 
 
 def main():
-    console = Console(stderr=True)
+    console = Console()
     parser = argparse.ArgumentParser(description="A flexible style checker for LookML.")
     parser.add_argument(
         "path",
