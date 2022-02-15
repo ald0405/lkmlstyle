@@ -49,8 +49,9 @@ def main():
         )
         lines = text.split("\n")
 
-        console.rule(str(path), style="#9999ff")
-        console.print()
+        if violations:
+            console.rule(path.name, style="#9999ff")
+            console.print()
         for violation in violations:
             code, title, line_number = violation
             console.print(f"{code} [bold red]{title}[/bold red]")
@@ -65,12 +66,15 @@ def main():
                     continue
                 elif n == line_number:
                     console.print(
-                        f" {n:<4} [red]>[/red]| {escape(lines[n - 1])}", highlight=False
+                        f" {n:<4} [red]>[/red]| {escape(lines[n - 1])}",
+                        highlight=False,
+                        no_wrap=True,
                     )
                 else:
                     console.print(
                         f" [dim]{n:<4}[/dim]  | [dim]{lines[n - 1]}[/dim]",
                         highlight=False,
+                        no_wrap=True,
                     )
             console.print()
 
