@@ -208,7 +208,7 @@ ALL_RULES = (
         negative=True,
     ),
     PatternMatchRule(
-        title="Unnecessary type specification for string dimension",
+        title="Redundant type specification for string dimension",
         code="D300",
         select="dimension.type",
         filters=tuple(),
