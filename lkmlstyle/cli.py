@@ -60,7 +60,7 @@ def main():
             console.print()
         for violation in violations:
             code, title, rationale, line_number = violation
-            console.print(f"{code} [bold red]{title}[/bold red]")
+            console.print(f"[{code}] [bold red]{title}[/bold red]")
             console.print(f"{path}:{line_number}")
             if args.show_rationale:
                 console.rule(style="grey30")
