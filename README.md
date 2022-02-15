@@ -21,6 +21,7 @@ lkmlstyle [FILE_NAME]
 - [ ] Write test cases for each rule
 - [ ] Support ordering rule type
 - [ ] Support whitespace rule type
-- [ ] Add rationale to each rule
+- [ ] Support inline ignores
+- [x] Add rationale to each rule
 - [ ] Support rules as YAML
 - [x] Add basic CLI
