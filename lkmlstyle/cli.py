@@ -68,7 +68,7 @@ def main():
                     Markdown("**Rationale:** " + rationale),
                     width=80,
                     highlight=False,
-                    style="italic",
+                    style="grey50",
                 )
             console.rule(style="grey30")
 
