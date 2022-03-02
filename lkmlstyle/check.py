@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Type, Union, Optional
+from typing import Union, Optional
 import lkml
 from lkml.visitors import BasicVisitor
 from lkml.tree import SyntaxNode, SyntaxToken, ContainerNode
