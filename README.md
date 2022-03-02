@@ -13,7 +13,7 @@ pip install -e .
 ## Usage
 
 ```shell
-lkmlstyle [FILE_NAME]
+lkmlstyle -h
 ```
 
 ## TODO
