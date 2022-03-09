@@ -71,7 +71,7 @@ class StyleCheckVisitor(BasicVisitor):
                 child.accept(self)
 
     def _select_current_node(self, rule: Rule) -> bool:
-        return self.lineage.endswith(rule.select)
+        return any(self.lineage.endswith(selector) for selector in rule.select)
 
 
 def choose_rules(

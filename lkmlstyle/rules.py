@@ -15,8 +15,14 @@ class Rule:
     title: str
     code: str
     rationale: str
-    select: str
+    select: Union[str, tuple[str, ...]]
     filters: tuple[partial[bool], ...]
+
+    def __post_init__(self):
+        # If `select` arg is a string, wrap it in a tuple
+        if isinstance(self.select, str):
+            # Why? https://docs.python.org/3/library/dataclasses.html#frozen-instances
+            object.__setattr__(self, "select", (self.select,))
 
     def applies_to(self, node: SyntaxNode) -> bool:
         """Check a node against a rule's filters for relevance."""
@@ -43,6 +49,7 @@ class PatternMatchRule(Rule):
     negative: Optional[bool] = False
 
     def __post_init__(self):
+        super().__post_init__()
         # Why? https://docs.python.org/3/library/dataclasses.html#frozen-instances
         object.__setattr__(self, "pattern", re.compile(self.regex))
 
@@ -78,6 +85,7 @@ class OrderRule(Rule):
     order: Optional[Iterable[str]] = None
 
     def __post_init__(self):
+        super().__post_init__()
         # Ensure the argument combination makes sense
         if (self.alphabetical + self.is_first + bool(self.order)) > 1:
             raise ValueError(
@@ -403,7 +411,7 @@ ALL_RULES = (
             "Sort dimensions alphabetically to make it easier to find a dimension "
             "while scrolling through a view file."
         ),
-        select="dimension",
+        select=("dimension", "dimension_group"),
         filters=tuple(),
         alphabetical=True,
     ),
