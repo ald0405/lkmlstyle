@@ -213,8 +213,34 @@ def test_count_measures_should_specify_a_filter():
 
 
 def test_dimensions_alphabetical():
-    ...
+    passes = """
+    dimension: abc {}
+    dimension: abd {}
+    dimension_group: bcd {}
+    dimension: xyz {}
+    """
+    fails = """
+    dimension: abc {}
+    dimension_group: xyz {}
+    dimension: abd {}
+    dimension: bcd {}
+    """
+    assert lkmlstyle.check(fails, select=("D106",))
+    assert not lkmlstyle.check(passes, select=("D106",))
 
 
 def test_measure_alphabetical():
-    ...
+    passes = """
+    measure: abc {}
+    measure: abd {}
+    measure: bcd {}
+    measure: xyz {}
+    """
+    fails = """
+    measure: abc {}
+    measure: xyz {}
+    measure: abd {}
+    measure: bcd {}
+    """
+    assert lkmlstyle.check(fails, select=("M106",))
+    assert not lkmlstyle.check(passes, select=("M106",))

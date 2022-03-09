@@ -18,8 +18,6 @@ lkmlstyle -h
 
 ## TODO
 
-- [ ] Write test cases for each rule
-- [ ] Support ordering rule type
 - [ ] Support inline ignores
 - [ ] Define default ruleset
 - [ ] Write documentation in README
@@ -27,5 +25,9 @@ lkmlstyle -h
 - [ ] Satisfy mypy
 - [ ] Support whitespace rule type
 - [ ] Support rules as YAML
+- [ ] Support file-based rules
+- [ ] Implement as many rules as possible from LAMS
+- [x] Write test cases for each rule
+- [x] Support ordering rule type
 - [x] Add rationale to each rule
 - [x] Add basic CLI
