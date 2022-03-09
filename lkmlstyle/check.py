@@ -33,7 +33,7 @@ class StyleCheckVisitor(BasicVisitor):
         super().__init__()
         self.rules: tuple[Rule, ...] = rules
         self._lineage: deque = deque()  # Faster than list for append/pop
-        self.violations: list[str] = []
+        self.violations: list[tuple] = []
         self.prev: Optional[SyntaxNode] = None
 
     @property
@@ -50,7 +50,7 @@ class StyleCheckVisitor(BasicVisitor):
                 if self._select_current_node(rule):
                     if rule.applies_to(node):
                         if isinstance(rule, OrderRule):
-                            violates = not rule.followed_by(node, self.prev)
+                            violates = not rule.followed_by((node, self.prev))
                         else:
                             violates = not rule.followed_by(node)
 
@@ -63,7 +63,6 @@ class StyleCheckVisitor(BasicVisitor):
                                     node.line_number,
                                 )
                             )
-                    # TODO: This needs to be tracked by rule
                     self.prev = node
 
         if node.children:
@@ -87,7 +86,7 @@ def choose_rules(
 
     all_codes = set(all_rules.keys())
 
-    invalid_rules = set(ignore or tuple() + select or tuple()) - all_codes
+    invalid_rules = set((ignore or tuple()) + (select or tuple())) - all_codes
     if invalid_rules:
         suffix = (
             "are not valid rule codes"

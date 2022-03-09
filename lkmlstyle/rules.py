@@ -1,7 +1,7 @@
 import re
 import typing
 from abc import abstractmethod
-from typing import Optional, Callable, Iterable, Union
+from typing import Optional, Callable, Sequence, Union
 from dataclasses import dataclass
 from functools import partial
 from lkml.tree import SyntaxNode, PairNode, BlockNode, ContainerNode, ListNode
@@ -28,7 +28,6 @@ class Rule:
         """Check a node against a rule's filters for relevance."""
         return all(is_filter_valid(node) for is_filter_valid in self.filters)
 
-    @abstractmethod
     def followed_by(self, node: SyntaxNode) -> bool:
         """Determine if node follows the rule."""
         raise NotImplementedError
@@ -55,7 +54,7 @@ class PatternMatchRule(Rule):
 
     def _matches(self, string: str) -> bool:
         """Check a string against the rule's regex."""
-        matched = bool(self.pattern.search(string))
+        matched = bool(self.pattern.search(string))  # type: ignore
         return not matched if self.negative else matched
 
     def followed_by(self, node: SyntaxNode) -> bool:
@@ -82,7 +81,7 @@ class OrderRule(Rule):
     alphabetical: bool = False
     is_first: bool = False
     use_key: bool = True
-    order: Optional[Iterable[str]] = None
+    order: Optional[Sequence[str]] = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -102,21 +101,29 @@ class OrderRule(Rule):
         else:
             return None
 
-    def followed_by(self, node: SyntaxNode, prev: Optional[SyntaxNode]) -> bool:
+    def followed_by(self, nodes: tuple[SyntaxNode, SyntaxNode]) -> bool:
         """Determine if node follows the rule."""
+        node, prev = nodes
         if self.alphabetical:
             if prev:
-                return self.get_node_value(node) > self.get_node_value(prev)
+                node_value = self.get_node_value(node)
+                prev_value = self.get_node_value(prev)
+                if node_value and prev_value:
+                    return node_value > prev_value
+                else:
+                    raise TypeError("Value of a compared node is None")
             else:
                 return True
         elif self.is_first:
             return prev is None
         elif self.order:
             if prev:
-                subset = set(self.get_node_value(prev), self.get_node_value(node))
+                subset = set((self.get_node_value(prev), self.get_node_value(node)))
                 return subset in set(self.order)
             else:
                 return self.get_node_value(node) == self.order[0]
+        else:
+            raise AttributeError("Alphabetical, is_first, or custom order must be set")
 
 
 def node_has_valid_class(node: SyntaxNode, node_type: type) -> bool:
