@@ -244,3 +244,24 @@ def test_measure_alphabetical():
     """
     assert lkmlstyle.check(fails, select=("M106",))
     assert not lkmlstyle.check(passes, select=("M106",))
+
+
+def test_primary_key_dimension_should_be_first():
+    passes = """
+    dimension_group: bcd {}
+    dimension: pk {
+        primary_key: yes
+    }
+    dimension: abd {}
+    dimension: xyz {}
+    """
+    fails = """
+    dimension: abc {}
+    dimension_group: xyz {}
+    dimension: abd {
+        primary_key: yes
+    }
+    dimension: bcd {}
+    """
+    assert lkmlstyle.check(fails, select=("D107",))
+    assert not lkmlstyle.check(passes, select=("D107",))

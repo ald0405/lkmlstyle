@@ -430,6 +430,23 @@ ALL_RULES = (
         filters=tuple(),
         alphabetical=True,
     ),
+    OrderRule(
+        title="Primary key dimension not the first dimension in this view",
+        code="D107",
+        rationale=(
+            "The primary key should be listed first in a view so developers quickly "
+            "understand the grain of the view and what a single record represents."
+        ),
+        select="dimension",
+        filters=tuple(
+            [
+                partial(
+                    block_has_valid_parameter, parameter_name="primary_key", value="yes"
+                )
+            ]
+        ),
+        is_first=True,
+    ),
 )
 
 RULES_BY_CODE = {}
