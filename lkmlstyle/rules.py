@@ -409,7 +409,9 @@ ALL_RULES = (
         code="D106",
         rationale=(
             "Sort dimensions alphabetically to make it easier to find a dimension "
-            "while scrolling through a view file."
+            "while scrolling through a view file.\n\nA dimension or dimension group "
+            "violates this rule if it is not alphabetically sorted with respect to "
+            "the previous dimension or dimension group."
         ),
         select=("dimension", "dimension_group"),
         filters=tuple(),
@@ -420,7 +422,9 @@ ALL_RULES = (
         code="M106",
         rationale=(
             "Sort measures alphabetically to make it easier to find a measure "
-            "while scrolling through a view file."
+            "while scrolling through a view file.\n\nA measure "
+            "violates this rule if it is not alphabetically sorted with respect to "
+            "the previous measure."
         ),
         select="measure",
         filters=tuple(),
