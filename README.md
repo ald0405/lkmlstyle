@@ -10,10 +10,10 @@ Install lkmlstyle with pip:
 pip install lkmlstyle
 ```
 
-If the installation was successful, you should be able to run this command to see the help menu:
+If the installation was successful, you should be able to run this command to see a table of all available style rules.
 
 ```
-lkmlstyle -h
+lkmlstyle rules
 ```
 
 ## Getting Started
