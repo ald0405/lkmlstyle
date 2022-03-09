@@ -34,6 +34,8 @@ You can pass individual or multiple files to lkmlstyle to valiate them specifica
 lkmlstyle repos/product-analytics/views/sessions.view.lkml
 ```
 
+## Customizing the ruleset
+
 ### Ignoring rules
 
 If you see rules you'd like to ignore, you can add the `--ignore` option and the codes for the offending rules to exclude them from testing.
