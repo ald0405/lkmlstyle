@@ -1,5 +1,6 @@
 import re
 import typing
+from abc import abstractmethod
 from typing import Optional, Callable, Iterable, Union
 from dataclasses import dataclass
 from functools import partial
@@ -18,12 +19,16 @@ class Rule:
     filters: tuple[partial[bool], ...]
 
     def applies_to(self, node: SyntaxNode) -> bool:
+        """Check a node against a rule's filters for relevance."""
         return all(is_filter_valid(node) for is_filter_valid in self.filters)
 
+    @abstractmethod
     def followed_by(self, node: SyntaxNode) -> bool:
+        """Determine if node follows the rule."""
         raise NotImplementedError
 
     def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+        """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.value.value
         elif isinstance(node, BlockNode):
@@ -42,10 +47,12 @@ class PatternMatchRule(Rule):
         object.__setattr__(self, "pattern", re.compile(self.regex))
 
     def _matches(self, string: str) -> bool:
+        """Check a string against the rule's regex."""
         matched = bool(self.pattern.search(string))
         return not matched if self.negative else matched
 
     def followed_by(self, node: SyntaxNode) -> bool:
+        """Determine if node follows the rule."""
         value = self.get_node_value(node)
         if value is None:
             return True
@@ -58,6 +65,7 @@ class ParameterRule(Rule):
     negative: Optional[bool] = False
 
     def followed_by(self, node: SyntaxNode) -> bool:
+        """Determine if node follows the rule."""
         matched = self.criteria(node)
         return not matched if self.negative else matched
 
@@ -70,13 +78,15 @@ class OrderRule(Rule):
     order: Optional[Iterable[str]] = None
 
     def __post_init__(self):
+        # Ensure the argument combination makes sense
         if (self.alphabetical + self.is_first + bool(self.order)) > 1:
-            raise AttributeError(
+            raise ValueError(
                 "Only one of 'alphabetical', 'is_first', or 'order' can be defined as "
                 "the sort order"
             )
 
     def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+        """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.type.value if self.use_key else node.value.value
         elif isinstance(node, BlockNode):
@@ -85,6 +95,7 @@ class OrderRule(Rule):
             return None
 
     def followed_by(self, node: SyntaxNode, prev: Optional[SyntaxNode]) -> bool:
+        """Determine if node follows the rule."""
         if self.alphabetical:
             if prev:
                 return self.get_node_value(node) > self.get_node_value(prev)
