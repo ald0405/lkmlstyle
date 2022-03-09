@@ -79,7 +79,12 @@ def check_style(args) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="A flexible style checker for LookML.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "A flexible style checker for LookML. "
+            "Run `lkmlstyle rules` to see all available rules."
+        )
+    )
     parser.add_argument(
         "path",
         nargs="*",
