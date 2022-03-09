@@ -58,4 +58,12 @@ If you're confused by a rule or curious why a Looker developer might want to fol
 lkmlstyle sessions.view.lkml orders.view.lkml --show-rationale
 ```
 
+### Showing all rules
+
+To display all the rules and rationales defined in lkmlstyle, run this command.
+
+```
+lkmlstyle rules
+```
+
 _lkmlstyle is maintained by the team at [Spectacles](https://spectacles.dev)—a continuous integration tool for Looker and LookML._

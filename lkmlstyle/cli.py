@@ -3,41 +3,26 @@ import pathlib
 from rich.markup import escape
 from rich.markdown import Markdown
 from rich.console import Console
+from rich.table import Table
 from lkmlstyle.check import check
+from lkmlstyle.rules import ALL_RULES
 
 
-def main():
-    console = Console()
-    parser = argparse.ArgumentParser(description="A flexible style checker for LookML.")
-    parser.add_argument(
-        "path",
-        nargs="+",
-        type=pathlib.Path,
-        help="path(s) to the file or directory to check",
-    )
-    parser.add_argument(
-        "--ignore",
-        nargs="+",
-        metavar="CODE",
-        required=False,
-        help="rule codes to exclude from checking, like 'D106' or 'M200'",
-        default=[],
-    )
-    parser.add_argument(
-        "--select",
-        nargs="+",
-        metavar="CODE",
-        required=False,
-        help="only check the specified rule codes, like 'D106' or 'M200'",
-        default=[],
-    )
-    parser.add_argument(
-        "--show-rationale",
-        action="store_true",
-        help="for each violation, describe why the rule exists",
-    )
-    args = parser.parse_args()
+console = Console()
 
+
+def print_rules_table() -> None:
+    table = Table(title="lkmlstyle Rules", show_lines=True)
+    table.add_column("Code", justify="center")
+    table.add_column("Rationale")
+
+    for rule in sorted(ALL_RULES, key=lambda x: x.code):
+        table.add_row(rule.code, Markdown(f"**{rule.title}**\n\n{rule.rationale}"))
+
+    console.print(table)
+
+
+def check_style(args) -> None:
     paths = []
     for path in args.path:
         if path.is_dir():
@@ -91,6 +76,44 @@ def main():
                         no_wrap=True,
                     )
             console.print()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="A flexible style checker for LookML.")
+    parser.add_argument(
+        "path",
+        nargs="*",
+        type=pathlib.Path,
+        help="path(s) to the file or directory to check",
+    )
+    parser.add_argument(
+        "--ignore",
+        nargs="+",
+        metavar="CODE",
+        required=False,
+        help="rule codes to exclude from checking, like 'D106' or 'M200'",
+        default=[],
+    )
+    parser.add_argument(
+        "--select",
+        nargs="+",
+        metavar="CODE",
+        required=False,
+        help="only check the specified rule codes, like 'D106' or 'M200'",
+        default=[],
+    )
+    parser.add_argument(
+        "--show-rationale",
+        action="store_true",
+        help="for each violation, describe why the rule exists",
+    )
+    args = parser.parse_args()
+    # This is a bit of a hack, but it's tough to get subparsers and positional args
+    # to work together without adding something like `lkmlstyle check`.
+    if str(args.path[0]) == "rules":
+        print_rules_table()
+    else:
+        check_style(args)
 
 
 if __name__ == "__main__":
