@@ -110,10 +110,15 @@ def main():
     args = parser.parse_args()
     # This is a bit of a hack, but it's tough to get subparsers and positional args
     # to work together without adding something like `lkmlstyle check`.
-    if str(args.path[0]) == "rules":
-        print_rules_table()
+    try:
+        first_positional = str(args.path[0])
+    except IndexError:
+        pass
     else:
-        check_style(args)
+        if first_positional == "rules":
+            print_rules_table()
+        else:
+            check_style(args)
 
 
 if __name__ == "__main__":
