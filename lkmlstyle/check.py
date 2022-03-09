@@ -85,6 +85,16 @@ def choose_rules(
         raise TypeError("Codes to ignore must be wrapped in a tuple")
 
     all_codes = set(all_rules.keys())
+
+    invalid_rules = set(ignore or tuple() + select or tuple()) - all_codes
+    if invalid_rules:
+        suffix = (
+            "are not valid rule codes"
+            if len(invalid_rules) > 1
+            else "is not a valid rule code"
+        )
+        raise ValueError(f"{', '.join(invalid_rules)} {suffix}")
+
     codes = all_codes & set(select or all_codes) - set(ignore or tuple())
     if not codes:
         return tuple(all_rules.values())
