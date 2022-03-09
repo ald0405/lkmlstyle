@@ -79,6 +79,7 @@ def choose_rules(
     ignore: Optional[tuple[str, ...]] = None,
     select: Optional[tuple[str, ...]] = None,
 ) -> tuple[Rule, ...]:
+    """Return the relevant rules given some selected and ignored rule codes."""
     if ignore and not isinstance(ignore, tuple):
         raise TypeError("Codes to ignore must be wrapped in a tuple")
     if select and not isinstance(select, tuple):
@@ -109,6 +110,7 @@ def check(
     ignore: Optional[tuple[str, ...]] = None,
     select: Optional[tuple[str, ...]] = None,
 ) -> list[tuple]:
+    """Validate a LookML string, given a set of rule codes to select and/or ignore."""
     tree = lkml.parse(text)
     visitor = StyleCheckVisitor(rules=choose_rules(RULES_BY_CODE, ignore, select))
     tree.accept(visitor)
