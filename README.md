@@ -1,33 +1,59 @@
-# lkmlstyle
+# What is lkmlstyle?
+
+**lkmlstyle is a flexible, command-line style checker for LookML.** lkmlstyle checks LookML to see if it follows predefined **rules**, returning lines in your code that don't follow the rules.
 
 ## Installation
 
-First, clone the Git repo and `cd` into the directory.
+Install lkmlstyle with pip:
 
-Then run the following command to create a local installation.
-
-```shell
-pip install -e .
+```
+pip install lkmlstyle
 ```
 
-## Usage
+If the installation was successful, you should be able to run this command to see the help menu:
 
-```shell
+```
 lkmlstyle -h
 ```
 
-## TODO
+## Getting Started
 
-- [ ] Support inline ignores
-- [ ] Define default ruleset
-- [ ] Write documentation in README
-- [ ] Release to PyPi
-- [ ] Satisfy mypy
-- [ ] Support whitespace rule type
-- [ ] Support rules as YAML
-- [ ] Support file-based rules
-- [ ] Implement as many rules as possible from LAMS
-- [x] Write test cases for each rule
-- [x] Support ordering rule type
-- [x] Add rationale to each rule
-- [x] Add basic CLI
+First, clone the Git repo for your Looker project to your local environment so lkmlstyle can find `.lkml` files in your environment.
+
+### Specifying files to check
+
+Next, run lkmlstyle with the path to your local Looker project repo. lkmlstyle will check all files in your project that end in `.lkml` and display any rule violations.
+
+```
+lkmlstyle repos/product-analytics
+```
+
+You can pass individual or multiple files to lkmlstyle to valiate them specifically.
+
+```
+lkmlstyle repos/product-analytics/views/sessions.view.lkml
+```
+
+### Ignoring rules
+
+If you see rules you'd like to ignore, you can add the `--ignore` option and the codes for the offending rules to exclude them from testing.
+
+```
+lkmlstyle repos/product-analytics/views/sessions.view.lkml --ignore D106 D107 M101
+```
+
+### Isolating rules
+
+Similarly, if you'd like to focus on a few rules at a time, you can provide rule codes to `--select` to _only_ test those rules.
+
+```
+lkmlstyle repos/product-analytics/views/sessions.view.lkml --select D101
+```
+
+### Seeing the rationale for rules
+
+If you're confused by a rule or curious why a Looker developer might want to follow it, you can add the `--show-rationale` option. lkmlstyle will display some information about why the rule exists.
+
+```
+lkmlstyle sessions.view.lkml orders.view.lkml --show-rationale
+```
