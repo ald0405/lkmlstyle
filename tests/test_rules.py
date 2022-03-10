@@ -257,3 +257,24 @@ def test_primary_key_dimension_should_be_first():
     """
     assert lkmlstyle.check(fails, select=("D107",))
     assert not lkmlstyle.check(passes, select=("D107",))
+
+
+def test_views_should_not_have_the_same_sql_table_name():
+    passes = """
+    view: abc {
+        sql_table_name: analytics.orders ;;
+    }
+    view: xyz {
+        sql_table_name: analytics.sessions ;;
+    }
+    """
+    fails = """
+    view: abc {
+        sql_table_name: analytics.orders ;;
+    }
+    view: xyz {
+        sql_table_name: analytics.orders ;;
+    }
+    """
+    assert lkmlstyle.check(fails, select=("V112",))
+    assert not lkmlstyle.check(passes, select=("V112",))

@@ -4,8 +4,8 @@ import lkml
 from lkml.visitors import BasicVisitor
 from lkml.tree import SyntaxNode, SyntaxToken, ContainerNode
 from lkmlstyle.rules import (
+    NodeContext,
     Rule,
-    OrderRule,
     RULES_BY_CODE,
 )
 
@@ -34,7 +34,7 @@ class StyleCheckVisitor(BasicVisitor):
         self.rules: tuple[Rule, ...] = rules
         self._lineage: deque = deque()  # Faster than list for append/pop
         self.violations: list[tuple] = []
-        self.prev: Optional[SyntaxNode] = None
+        self.context = NodeContext()
 
     @property
     def lineage(self) -> str:
@@ -48,12 +48,8 @@ class StyleCheckVisitor(BasicVisitor):
         if not isinstance(node, ContainerNode):
             for rule in self.rules:
                 if rule.applies_to(node, self.lineage):
-                    if isinstance(rule, OrderRule):
-                        violates = not rule.followed_by((node, self.prev))
-                    else:
-                        violates = not rule.followed_by(node)
-
-                    if violates:
+                    follows, self.context = rule.followed_by(node, self.context)
+                    if not follows:
                         self.violations.append(
                             (
                                 rule.code,
@@ -64,7 +60,7 @@ class StyleCheckVisitor(BasicVisitor):
                         )
                 # Set if node matches selectors even if it doesn't match filters
                 if rule.selects(self.lineage):
-                    self.prev = node
+                    self.context.previous_node[rule.code] = node
 
         if node.children:
             for child in node.children:

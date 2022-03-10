@@ -1,13 +1,20 @@
 import re
 import typing
-from abc import abstractmethod
 from typing import Optional, Callable, Sequence, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from lkml.tree import SyntaxNode, PairNode, BlockNode, ContainerNode, ListNode
 
 
 TypedNode = Union[BlockNode, PairNode, ListNode]
+
+
+@dataclass
+class NodeContext:
+    """State required to check for rule violations"""
+
+    previous_node: dict[str, Optional[SyntaxNode]] = field(default_factory=dict)
+    table_to_view: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -33,7 +40,9 @@ class Rule:
             is_filter_valid(node) for is_filter_valid in self.filters
         )
 
-    def followed_by(self, node: SyntaxNode) -> bool:
+    def followed_by(
+        self, node: SyntaxNode, context: NodeContext
+    ) -> tuple[bool, NodeContext]:
         """Determine if node follows the rule."""
         raise NotImplementedError
 
@@ -62,12 +71,14 @@ class PatternMatchRule(Rule):
         matched = bool(self.pattern.search(string))  # type: ignore
         return not matched if self.negative else matched
 
-    def followed_by(self, node: SyntaxNode) -> bool:
+    def followed_by(
+        self, node: SyntaxNode, context: NodeContext
+    ) -> tuple[bool, NodeContext]:
         """Determine if node follows the rule."""
         value = self.get_node_value(node)
         if value is None:
-            return True
-        return self._matches(value)
+            return True, context
+        return self._matches(value), context
 
 
 @dataclass(frozen=True)
@@ -75,10 +86,12 @@ class ParameterRule(Rule):
     criteria: partial[bool]
     negative: Optional[bool] = False
 
-    def followed_by(self, node: SyntaxNode) -> bool:
+    def followed_by(
+        self, node: SyntaxNode, context: NodeContext
+    ) -> tuple[bool, NodeContext]:
         """Determine if node follows the rule."""
         matched = self.criteria(node)
-        return not matched if self.negative else matched
+        return not matched if self.negative else matched, context
 
 
 @dataclass(frozen=True)
@@ -106,66 +119,65 @@ class OrderRule(Rule):
         else:
             return None
 
-    def followed_by(self, nodes: tuple[SyntaxNode, SyntaxNode]) -> bool:
+    def followed_by(
+        self, node: SyntaxNode, context: NodeContext
+    ) -> tuple[bool, NodeContext]:
         """Determine if node follows the rule."""
-        node, prev = nodes
+        follows = True
+        prev = context.previous_node.get(self.code)
+
         if self.alphabetical:
             if prev:
                 node_value = self.get_node_value(node)
                 prev_value = self.get_node_value(prev)
                 if node_value and prev_value:
-                    return node_value > prev_value
+                    follows = node_value > prev_value
                 else:
                     raise TypeError("Value of a compared node is None")
             else:
-                return True
+                follows = True
         elif self.is_first:
-            return prev is None
+            follows = prev is None
         elif self.order:
             if prev:
                 subset = set((self.get_node_value(prev), self.get_node_value(node)))
-                return subset in set(self.order)
+                follows = subset in set(self.order)
             else:
-                return self.get_node_value(node) == self.order[0]
+                follows = self.get_node_value(node) == self.order[0]
         else:
             raise AttributeError("Alphabetical, is_first, or custom order must be set")
 
+        return follows, context
+
 
 @dataclass(frozen=True)
-class DuplicateViewRule:
-    title: str
-    code: str
-    rationale: str
+class DuplicateViewRule(Rule):
+    def followed_by(
+        self, node: SyntaxNode, context: NodeContext
+    ) -> tuple[bool, NodeContext]:
+        if context.table_to_view is None:
+            raise TypeError("table_to_view cannot be None")
 
-    def selects(self, lineage: str) -> bool:
-        return lineage.endswith("view")
-
-    def applies_to(self, node: SyntaxNode, lineage: str) -> bool:
-        """Check a node against a rule's filters for relevance."""
-        return self.selects(lineage)
-
-    def followed_by(self, node: BlockNode, view_tables: set[tuple[str, str]]) -> bool:
-        view_name: str = node.key.value
-        sql_table_name_node: Optional[PairNode] = get_child_by_key(
+        view_name: str = node.name.value
+        sql_table_name_node: Optional[PairNode] = get_child_by_type(
             node, "sql_table_name"
         )
 
         if sql_table_name_node is None:
-            return True
+            return True, context
         else:
             sql_table_name = sql_table_name_node.value.value
 
-        view_table = (view_name, sql_table_name)
-        if view_table in self.view_tables:
-            return False
+        if sql_table_name in context.table_to_view:
+            return False, context
         else:
-            self.view_tables.add(view_table)
-            return True
+            context.table_to_view[sql_table_name] = view_name
+            return True, context
 
 
-def get_child_by_key(node: BlockNode, key: str) -> Optional[PairNode]:
+def get_child_by_type(node: BlockNode, node_type: str) -> Optional[PairNode]:
     for child in node.container.items:
-        if child.key.value == key:
+        if child.type.value == node_type:
             return child
     return None
 
@@ -570,15 +582,17 @@ ALL_RULES = (
         regex=r"(?i)Yes/No",
         negative=True,
     ),
-    # DuplicateViewRule(
-    #     title="View uses the same table as another view",
-    #     code="V100",
-    #     rationale=(
-    #         "Views should not have the same **sql_table_name** because two views with "
-    #         "the same table name are effectively the same view. Instead, consolidate "
-    #         "these views into a single view."
-    #     ),
-    # ),
+    DuplicateViewRule(
+        title="View uses the same table as another view",
+        code="V112",
+        rationale=(
+            "Views should not have the same **sql_table_name** because two views with "
+            "the same table name are effectively the same view. Instead, consolidate "
+            "these views into a single view."
+        ),
+        select="view",
+        filters=tuple(),
+    ),
 )
 
 RULES_BY_CODE = {}
