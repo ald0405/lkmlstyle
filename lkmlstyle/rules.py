@@ -24,9 +24,14 @@ class Rule:
             # Why? https://docs.python.org/3/library/dataclasses.html#frozen-instances
             object.__setattr__(self, "select", (self.select,))
 
-    def applies_to(self, node: SyntaxNode) -> bool:
+    def selects(self, lineage: str) -> bool:
+        return any(lineage.endswith(selector) for selector in self.select)
+
+    def applies_to(self, node: SyntaxNode, lineage: str) -> bool:
         """Check a node against a rule's filters for relevance."""
-        return all(is_filter_valid(node) for is_filter_valid in self.filters)
+        return self.selects(lineage) and all(
+            is_filter_valid(node) for is_filter_valid in self.filters
+        )
 
     def followed_by(self, node: SyntaxNode) -> bool:
         """Determine if node follows the rule."""
@@ -124,6 +129,45 @@ class OrderRule(Rule):
                 return self.get_node_value(node) == self.order[0]
         else:
             raise AttributeError("Alphabetical, is_first, or custom order must be set")
+
+
+@dataclass(frozen=True)
+class DuplicateViewRule:
+    title: str
+    code: str
+    rationale: str
+
+    def selects(self, lineage: str) -> bool:
+        return lineage.endswith("view")
+
+    def applies_to(self, node: SyntaxNode, lineage: str) -> bool:
+        """Check a node against a rule's filters for relevance."""
+        return self.selects(lineage)
+
+    def followed_by(self, node: BlockNode, view_tables: set[tuple[str, str]]) -> bool:
+        view_name: str = node.key.value
+        sql_table_name_node: Optional[PairNode] = get_child_by_key(
+            node, "sql_table_name"
+        )
+
+        if sql_table_name_node is None:
+            return True
+        else:
+            sql_table_name = sql_table_name_node.value.value
+
+        view_table = (view_name, sql_table_name)
+        if view_table in self.view_tables:
+            return False
+        else:
+            self.view_tables.add(view_table)
+            return True
+
+
+def get_child_by_key(node: BlockNode, key: str) -> Optional[PairNode]:
+    for child in node.container.items:
+        if child.key.value == key:
+            return child
+    return None
 
 
 def node_has_valid_class(node: SyntaxNode, node_type: type) -> bool:
@@ -526,6 +570,15 @@ ALL_RULES = (
         regex=r"(?i)Yes/No",
         negative=True,
     ),
+    # DuplicateViewRule(
+    #     title="View uses the same table as another view",
+    #     code="V100",
+    #     rationale=(
+    #         "Views should not have the same **sql_table_name** because two views with "
+    #         "the same table name are effectively the same view. Instead, consolidate "
+    #         "these views into a single view."
+    #     ),
+    # ),
 )
 
 RULES_BY_CODE = {}

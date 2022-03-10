@@ -47,30 +47,28 @@ class StyleCheckVisitor(BasicVisitor):
 
         if not isinstance(node, ContainerNode):
             for rule in self.rules:
-                if self._select_current_node(rule):
-                    if rule.applies_to(node):
-                        if isinstance(rule, OrderRule):
-                            violates = not rule.followed_by((node, self.prev))
-                        else:
-                            violates = not rule.followed_by(node)
+                if rule.applies_to(node, self.lineage):
+                    if isinstance(rule, OrderRule):
+                        violates = not rule.followed_by((node, self.prev))
+                    else:
+                        violates = not rule.followed_by(node)
 
-                        if violates:
-                            self.violations.append(
-                                (
-                                    rule.code,
-                                    rule.title,
-                                    rule.rationale,
-                                    node.line_number,
-                                )
+                    if violates:
+                        self.violations.append(
+                            (
+                                rule.code,
+                                rule.title,
+                                rule.rationale,
+                                node.line_number,
                             )
+                        )
+                # Set if node matches selectors even if it doesn't match filters
+                if rule.selects(self.lineage):
                     self.prev = node
 
         if node.children:
             for child in node.children:
                 child.accept(self)
-
-    def _select_current_node(self, rule: Rule) -> bool:
-        return any(self.lineage.endswith(selector) for selector in rule.select)
 
 
 def choose_rules(
