@@ -183,6 +183,42 @@ def block_has_valid_parameter(
 # or it does, but also passes the regex, criteria, order, etc. of the rule
 ALL_RULES = (
     PatternMatchRule(
+        title="Dimension name not in snake case",
+        code="D101",
+        rationale=(
+            "Dimension names should match the conventional format, which is "
+            "snake case—words in lowercase, separated by underscores. "
+            "For example, **order_id** instead of **orderId** or **OrderID**."
+        ),
+        select=("dimension", "dimension_group"),
+        filters=tuple(),
+        regex=r"^[a-z0-9]+(?:_[a-z0-9]+)*$",
+    ),
+    PatternMatchRule(
+        title="Measure name not in snake case",
+        code="M103",
+        rationale=(
+            "Measure names should match the conventional format, which is "
+            "snake case—words in lowercase, separated by underscores. "
+            "For example, **count_orders** instead of **OrderCount**."
+        ),
+        select="measure",
+        filters=tuple(),
+        regex=r"^[a-z0-9]+(?:_[a-z0-9]+)*$",
+    ),
+    PatternMatchRule(
+        title="View name not in snake case",
+        code="V100",
+        rationale=(
+            "View names should match the conventional format, which is "
+            "snake case—words in lowercase, separated by underscores. "
+            "For example, **all_orders** instead of **allOrders** or **AllOrders**."
+        ),
+        select="view",
+        filters=tuple(),
+        regex=r"^[a-z0-9]+(?:_[a-z0-9]+)*$",
+    ),
+    PatternMatchRule(
         title="Name of count measure doesn't start with 'count_'",
         code="M100",
         rationale=(
@@ -252,15 +288,6 @@ ALL_RULES = (
         negative=True,
     ),
     PatternMatchRule(
-        title="Don't include all views",
-        code="V100",
-        rationale=("???"),
-        select="include",
-        filters=tuple(),
-        regex=r"^\*\.view",
-        negative=True,
-    ),
-    PatternMatchRule(
         title="Redundant type specification for string dimension",
         code="D300",
         rationale=(
@@ -271,6 +298,19 @@ ALL_RULES = (
         select="dimension.type",
         filters=tuple(),
         regex=r"^string$",
+        negative=True,
+    ),
+    PatternMatchRule(
+        title="Redundant type specification for join",
+        code="J100",
+        rationale=(
+            "By default, Looker defines joins with **type: left_outer**. "
+            "Explicitly stating a left outer join is redundant, the **type** "
+            "parameter can be removed."
+        ),
+        select="join.type",
+        filters=tuple(),
+        regex=r"^left_outer$",
         negative=True,
     ),
     PatternMatchRule(
@@ -314,7 +354,7 @@ ALL_RULES = (
             "Dimensions that are visible in the Explore page should have a description "
             "so users understand how and why to use them, along with any caveats."
         ),
-        select="dimension",
+        select=("dimension", "dimension_group"),
         filters=tuple(
             [
                 partial(
@@ -362,6 +402,25 @@ ALL_RULES = (
             is_valid=partial(
                 block_has_valid_parameter, parameter_name="primary_key", value="yes"
             ),
+        ),
+    ),
+    ParameterRule(
+        title="View missing view label",
+        code="V111",
+        rationale=(
+            "Views should define a view label to provide "
+            "a user-friendly name for the view in Explores. "
+            "Looker generates title-cased names for views based on the view name in "
+            "LookML, but these names aren't always useful for users in Explores. "
+            "For example, an auto-generated view name **Prod Sessions L3d** "
+            "(generated from view: prod_sessions_l3d) is not as succinct or "
+            "informational as **Web Sessions**."
+        ),
+        select="view",
+        filters=tuple(),
+        criteria=partial(
+            node_has_at_least_one_valid_child,
+            is_valid=partial(block_has_valid_parameter, parameter_name="view_label"),
         ),
     ),
     ParameterRule(
@@ -453,6 +512,19 @@ ALL_RULES = (
             ]
         ),
         is_first=True,
+    ),
+    PatternMatchRule(
+        title='Dimension label includes redundant "Yes/No"',
+        code="D303",
+        rationale=(
+            'For **yesno** dimensions, Looker adds "Yes/No" to the end of the '
+            "dimension's label by default, so there's no need to include it in the "
+            "label."
+        ),
+        select="dimension.label",
+        filters=tuple(),
+        regex=r"(?i)Yes/No",
+        negative=True,
     ),
 )
 

@@ -83,14 +83,6 @@ def test_measures_only_reference_dimensions():
     assert not lkmlstyle.check(passes, select=("M110",))
 
 
-def test_wildcard_includes():
-    fails = 'include: "*.view"'
-    passes = 'include: "schema_name.*.view"'
-    assert lkmlstyle.check(fails, select=("V100",))
-    assert not lkmlstyle.check(passes, select=("V100",))
-    assert not lkmlstyle.check("include: view_name.view", select=("V100",))
-
-
 def test_redundant_dimension_type():
     fails = "dimension: order_id { type: string }"
     all_passes = ["dimension: order_id { }", "dimension: order_id { type: number }"]
