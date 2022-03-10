@@ -192,7 +192,7 @@ ALL_RULES = (
         ),
         select=("dimension", "dimension_group"),
         filters=tuple(),
-        regex=r"^[a-z0-9]+(?:_[a-z0-9]+)*$",
+        regex=r"^[_a-z0-9]+$",
     ),
     PatternMatchRule(
         title="Measure name not in snake case",
@@ -204,7 +204,7 @@ ALL_RULES = (
         ),
         select="measure",
         filters=tuple(),
-        regex=r"^[a-z0-9]+(?:_[a-z0-9]+)*$",
+        regex=r"^[_a-z0-9]+$",
     ),
     PatternMatchRule(
         title="View name not in snake case",
@@ -216,7 +216,7 @@ ALL_RULES = (
         ),
         select="view",
         filters=tuple(),
-        regex=r"^[a-z0-9]+(?:_[a-z0-9]+)*$",
+        regex=r"^[_a-z0-9]+$",
     ),
     PatternMatchRule(
         title="Name of count measure doesn't start with 'count_'",
