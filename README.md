@@ -2,6 +2,8 @@
 
 **lkmlstyle is a flexible, command-line style checker for LookML.** lkmlstyle checks LookML to see if it follows predefined **rules**, returning lines in your code that don't follow the rules.
 
+![image](https://user-images.githubusercontent.com/8672171/158179741-99a33afb-37f8-4940-af66-0ccbaeeb006b.png)
+
 ## Installation
 
 Install lkmlstyle with pip:
