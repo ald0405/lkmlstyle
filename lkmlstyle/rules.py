@@ -31,6 +31,9 @@ class Rule:
             # Why? https://docs.python.org/3/library/dataclasses.html#frozen-instances
             object.__setattr__(self, "select", (self.select,))
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}<{self.code}>"
+
     def selects(self, lineage: str) -> bool:
         return any(lineage.endswith(selector) for selector in self.select)
 
@@ -50,13 +53,13 @@ class Rule:
         """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.value.value
-        elif isinstance(node, BlockNode):
+        elif isinstance(node, BlockNode) and node.name:
             return node.name.value
         else:
             return None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class PatternMatchRule(Rule):
     regex: str
     negative: Optional[bool] = False
@@ -81,7 +84,7 @@ class PatternMatchRule(Rule):
         return self._matches(value), context
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class ParameterRule(Rule):
     criteria: partial[bool]
     negative: Optional[bool] = False
@@ -94,7 +97,7 @@ class ParameterRule(Rule):
         return not matched if self.negative else matched, context
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class OrderRule(Rule):
     alphabetical: bool = False
     is_first: bool = False
@@ -114,7 +117,7 @@ class OrderRule(Rule):
         """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.type.value if self.use_key else node.value.value
-        elif isinstance(node, BlockNode):
+        elif isinstance(node, BlockNode) and node.name:
             return node.name.value
         else:
             return None
@@ -150,18 +153,29 @@ class OrderRule(Rule):
         return follows, context
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class DuplicateViewRule(Rule):
     def followed_by(
         self, node: SyntaxNode, context: NodeContext
     ) -> tuple[bool, NodeContext]:
+        # Selection rules ensure this shouldn't happen, but this makes mypy happy
+        if not isinstance(node, BlockNode):
+            return True, context
+
         if context.table_to_view is None:
             raise TypeError("table_to_view cannot be None")
 
+        if node.name is None:
+            raise TypeError(f"Name for view {repr(node)} is None")
+
         view_name: str = node.name.value
-        sql_table_name_node: Optional[PairNode] = get_child_by_type(
-            node, "sql_table_name"
-        )
+        sql_table_name_node = get_child_by_type(node, "sql_table_name")
+
+        if not isinstance(sql_table_name_node, PairNode):
+            raise TypeError(
+                "Node for sql_table_name is of unexpected type "
+                f"{type(sql_table_name_node)}. Expected a PairNode"
+            )
 
         if sql_table_name_node is None:
             return True, context
@@ -175,7 +189,7 @@ class DuplicateViewRule(Rule):
             return True, context
 
 
-def get_child_by_type(node: BlockNode, node_type: str) -> Optional[PairNode]:
+def get_child_by_type(node: BlockNode, node_type: str) -> Optional[TypedNode]:
     for child in node.container.items:
         if child.type.value == node_type:
             return child
@@ -195,6 +209,8 @@ def pair_has_valid_value(pair: PairNode, value: str) -> bool:
 
 
 def node_has_at_least_one_valid_child(node: SyntaxNode, is_valid: Callable) -> bool:
+    if node.children is None:
+        return False
     for child in node.children:
         if isinstance(child, ContainerNode):
             if node_has_at_least_one_valid_child(child, is_valid):

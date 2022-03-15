@@ -1,10 +1,11 @@
 import argparse
+import logging
 import pathlib
 from rich.markup import escape
 from rich.markdown import Markdown
 from rich.console import Console
 from rich.table import Table
-from lkmlstyle.check import check
+from lkmlstyle.check import check, logs_handler
 from lkmlstyle.rules import ALL_RULES
 
 
@@ -112,7 +113,17 @@ def main():
         action="store_true",
         help="for each violation, describe why the rule exists",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="show debugging logs",
+        action="store_const",
+        dest="loglevel",
+        default=logging.WARNING,
+        const=logging.DEBUG,
+    )
     args = parser.parse_args()
+    logs_handler.setLevel(args.loglevel)
     # This is a bit of a hack, but it's tough to get subparsers and positional args
     # to work together without adding something like `lkmlstyle check`.
     try:
