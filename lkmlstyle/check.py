@@ -1,4 +1,5 @@
 from collections import deque
+import logging
 from typing import Union, Optional
 import lkml
 from lkml.visitors import BasicVisitor
@@ -8,6 +9,11 @@ from lkmlstyle.rules import (
     Rule,
     RULES_BY_CODE,
 )
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logs_handler = logging.StreamHandler()
+logger.addHandler(logs_handler)
 
 
 def track_lineage(method):
@@ -48,6 +54,7 @@ class StyleCheckVisitor(BasicVisitor):
         if not isinstance(node, ContainerNode):
             for rule in self.rules:
                 if rule.applies_to(node, self.lineage):
+                    logger.debug(f"Checking if {repr(node)} follows {repr(rule)}")
                     follows, self.context = rule.followed_by(node, self.context)
                     if not follows:
                         self.violations.append(
