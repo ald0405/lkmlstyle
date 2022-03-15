@@ -31,6 +31,9 @@ class Rule:
             # Why? https://docs.python.org/3/library/dataclasses.html#frozen-instances
             object.__setattr__(self, "select", (self.select,))
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}<{self.code}>"
+
     def selects(self, lineage: str) -> bool:
         return any(lineage.endswith(selector) for selector in self.select)
 
@@ -56,7 +59,7 @@ class Rule:
             return None
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class PatternMatchRule(Rule):
     regex: str
     negative: Optional[bool] = False
@@ -81,7 +84,7 @@ class PatternMatchRule(Rule):
         return self._matches(value), context
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class ParameterRule(Rule):
     criteria: partial[bool]
     negative: Optional[bool] = False
@@ -94,7 +97,7 @@ class ParameterRule(Rule):
         return not matched if self.negative else matched, context
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class OrderRule(Rule):
     alphabetical: bool = False
     is_first: bool = False
@@ -150,7 +153,7 @@ class OrderRule(Rule):
         return follows, context
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class DuplicateViewRule(Rule):
     def followed_by(
         self, node: SyntaxNode, context: NodeContext
