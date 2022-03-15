@@ -171,14 +171,13 @@ class DuplicateViewRule(Rule):
         view_name: str = node.name.value
         sql_table_name_node = get_child_by_type(node, "sql_table_name")
 
-        if not isinstance(sql_table_name_node, PairNode):
+        if sql_table_name_node is None:
+            return True, context
+        elif not isinstance(sql_table_name_node, PairNode):
             raise TypeError(
                 "Node for sql_table_name is of unexpected type "
                 f"{type(sql_table_name_node)}. Expected a PairNode"
             )
-
-        if sql_table_name_node is None:
-            return True, context
         else:
             sql_table_name = sql_table_name_node.value.value
 

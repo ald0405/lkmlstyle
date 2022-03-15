@@ -278,3 +278,15 @@ def test_views_should_not_have_the_same_sql_table_name():
     """
     assert lkmlstyle.check(fails, select=("V112",))
     assert not lkmlstyle.check(passes, select=("V112",))
+
+
+def test_duplicate_views_rule_works_with_derived_table():
+    view = """
+    view: test {
+        derived_table: {
+            sql: select 1
+        ;;
+        }
+    }
+    """
+    assert not lkmlstyle.check(view, select=("V112",))
