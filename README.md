@@ -6,7 +6,7 @@
 
 ## Installation
 
-lkmlstyle requires Python 3.9 or higher. To check your Python version, run `python --version`.
+lkmlstyle requires Python 3.10 or higher. To check your Python version, run `python --version`.
 
 Install lkmlstyle with pip:
 
@@ -43,6 +43,8 @@ lkmlstyle repos/product-analytics/views/sessions.view.lkml
 ### Ignoring rules
 
 If you see rules you'd like to ignore, you can add the `--ignore` option and the codes for the offending rules to exclude them from testing.
+
+`--ignore` must always be specified after all file paths, at the end of your command.
 
 ```
 lkmlstyle repos/product-analytics/views/sessions.view.lkml --ignore D106 D107 M101

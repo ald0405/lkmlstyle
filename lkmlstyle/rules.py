@@ -1,12 +1,14 @@
 import re
-import typing
-from typing import Optional, Callable, Sequence, Union
+from typing import Optional, Sequence, Union
 from dataclasses import dataclass, field
 from functools import partial
-from lkml.tree import SyntaxNode, PairNode, BlockNode, ContainerNode, ListNode
-
-
-TypedNode = Union[BlockNode, PairNode, ListNode]
+from lkml.tree import SyntaxNode, PairNode, BlockNode
+from lkmlstyle.utils import (
+    find_child_by_type,
+    find_descendant_by_lineage,
+    node_has_at_least_one_valid_child,
+    block_has_valid_parameter,
+)
 
 
 @dataclass
@@ -17,13 +19,14 @@ class NodeContext:
     table_to_view: dict[str, str] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Rule:
     title: str
     code: str
     rationale: str
     select: Union[str, tuple[str, ...]]
     filters: tuple[partial[bool], ...]
+    filter_on: Optional[str] = None
 
     def __post_init__(self):
         # If `select` arg is a string, wrap it in a tuple
@@ -40,9 +43,21 @@ class Rule:
 
     def applies_to(self, node: SyntaxNode, lineage: str) -> bool:
         """Check a node against a rule's filters for relevance."""
-        return self.selects(lineage) and all(
-            is_filter_valid(node) for is_filter_valid in self.filters
-        )
+        # At a minimum, the node's lineage must match the selection string
+        if not self.selects(lineage):
+            return False
+
+        # The rule may specify a descendant to filter on, find this node
+        if self.filter_on:
+            descendant = find_descendant_by_lineage(node, lineage=self.filter_on)
+            if descendant is None:
+                return False
+            else:
+                filter_node = descendant
+        else:
+            filter_node = node
+
+        return all(is_filter_valid(filter_node) for is_filter_valid in self.filters)
 
     def followed_by(
         self, node: SyntaxNode, context: NodeContext
@@ -170,7 +185,7 @@ class DuplicateViewRule(Rule):
             raise TypeError(f"Name for view {repr(node)} is None")
 
         view_name: str = node.name.value
-        sql_table_name_node = get_child_by_type(node, "sql_table_name")
+        sql_table_name_node = find_child_by_type(node, "sql_table_name")
 
         if sql_table_name_node is None:
             return True, context
@@ -187,67 +202,6 @@ class DuplicateViewRule(Rule):
         else:
             context.table_to_view[sql_table_name] = view_name
             return True, context
-
-
-def get_child_by_type(node: BlockNode, node_type: str) -> Optional[TypedNode]:
-    for child in node.container.items:
-        if child.type.value == node_type:
-            return child
-    return None
-
-
-def node_has_valid_class(node: SyntaxNode, node_type: type) -> bool:
-    return isinstance(node, node_type)
-
-
-def node_has_valid_type(node: TypedNode, value: str) -> bool:
-    return node.type.value == value
-
-
-def pair_has_valid_value(pair: PairNode, value: str) -> bool:
-    return pair.value.value == value
-
-
-def node_has_at_least_one_valid_child(node: SyntaxNode, is_valid: Callable) -> bool:
-    if node.children is None:
-        return False
-    for child in node.children:
-        if isinstance(child, ContainerNode):
-            if node_has_at_least_one_valid_child(child, is_valid):
-                return True
-        elif is_valid(child):
-            return True
-    return False
-
-
-def block_has_valid_parameter(
-    block: BlockNode,
-    parameter_name: str,
-    value: Optional[str] = None,
-    negative: Optional[bool] = False,
-) -> bool:
-    # TODO: Make sure this actually works
-    if not isinstance(block, BlockNode):
-        return False
-
-    def is_valid_param(node: TypedNode) -> bool:
-        # Only consider nodes that define a type attribute
-        if not isinstance(node, typing.get_args(TypedNode)):
-            return False
-        if not node_has_valid_type(node, parameter_name):
-            return False
-
-        if value:
-            # Can only test value for PairNodes
-            if not isinstance(node, PairNode):
-                return False
-            if not pair_has_valid_value(node, value):
-                return False
-
-        return True
-
-    valid = node_has_at_least_one_valid_child(block, is_valid_param)
-    return not valid if negative else valid
 
 
 # Rules define the criteria for the passing state
@@ -608,6 +562,30 @@ ALL_RULES = (
         ),
         select="view",
         filters=tuple(),
+    ),
+    PatternMatchRule(
+        title="Name of persistent derived table view doesn't start with 'pdt_'",
+        code="V113",
+        rationale=(
+            "Views that define persistent derived tables should be prefixed "
+            "to make it easy to identify views based on PDTs."
+        ),
+        select="view",
+        regex=r"^pdt_",
+        filter_on="derived_table",
+        filters=tuple(
+            [
+                lambda x: block_has_valid_parameter(
+                    x, parameter_name="datagroup_trigger"
+                )
+                or block_has_valid_parameter(x, parameter_name="sql_trigger_value")
+                or block_has_valid_parameter(x, parameter_name="interval_trigger")
+                or block_has_valid_parameter(x, parameter_name="persist_for")
+                or block_has_valid_parameter(
+                    x, parameter_name="materialized_view", value="yes"
+                )
+            ]
+        ),
     ),
 )
 
