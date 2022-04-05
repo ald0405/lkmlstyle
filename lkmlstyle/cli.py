@@ -1,10 +1,12 @@
 import argparse
 import logging
 import pathlib
+import sys
 from rich.markup import escape
 from rich.markdown import Markdown
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
 from lkmlstyle.check import check, logs_handler
 from lkmlstyle.rules import ALL_RULES
 
@@ -40,9 +42,33 @@ def check_style(args) -> None:
         violations = []
         with path.open("r") as file:
             text = file.read()
-        violations.extend(
-            check(text, select=tuple(args.select), ignore=tuple(args.ignore))
-        )
+
+        try:
+            file_violations = check(
+                text, select=tuple(args.select), ignore=tuple(args.ignore)
+            )
+        except SyntaxError as error:
+            console.print(
+                Panel.fit(
+                    (
+                        f"[bold red]Couldn't parse the LookML in[/bold red] "
+                        f"{format_path(path)}\n\nParser error: [red]{error}[/red]\n\n"
+                        "The syntax of the LookML file might be invalid. "
+                        "Double-check the LookML syntax at the line or "
+                        "run the LookML validator in the Looker IDE.\n\n"
+                        "If you find the LookML file [i]is[/i] valid, please submit an issue "
+                        "with the file's contents to "
+                        "[u blue link=https://github.com/joshtemple/lkml/issues/new]"
+                        "https://github.com/joshtemple/lkml[/u blue link]"
+                    ),
+                    title="[bold red]Error[/bold red]",
+                    width=80,
+                    padding=(1, 2),
+                )
+            )
+            sys.exit(100)
+
+        violations.extend(file_violations)
         lines = text.split("\n")
 
         if violations:
@@ -51,7 +77,7 @@ def check_style(args) -> None:
         for violation in violations:
             code, title, rationale, line_number = violation
             console.print(f"[{code}] [bold red]{title}[/bold red]")
-            console.print(f"{path}:{line_number}")
+            console.print(f"{format_path(path)}:{line_number}")
             if args.show_rationale:
                 console.rule(style="grey30")
                 console.print(
