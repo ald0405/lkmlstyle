@@ -1,17 +1,18 @@
 import argparse
 import logging
 import pathlib
+import re
 import sys
 from rich.markup import escape
 from rich.markdown import Markdown
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
+from rich.theme import Theme
 from lkmlstyle.check import check, logs_handler
 from lkmlstyle.rules import ALL_RULES
 
-
-console = Console()
+console = Console(theme=Theme({"code": "white on #2D3138"}))
 
 
 def print_rules_table() -> None:
@@ -29,6 +30,15 @@ def format_path(path: pathlib.Path) -> str:
     return f"[dim]{path.parent}/[/dim][bold]{path.name}[/bold]"
 
 
+def format_error(message: str, title: str = "Error") -> Panel:
+    return Panel(
+        message,
+        title=f"[bold red]{title}[/bold red]",
+        width=80,
+        padding=(1, 2),
+    )
+
+
 def check_style(args) -> None:
     paths = []
     for path in args.path:
@@ -40,8 +50,18 @@ def check_style(args) -> None:
     console.print()
     for path in sorted(set(paths)):
         violations = []
-        with path.open("r") as file:
-            text = file.read()
+
+        try:
+            with path.open("r") as file:
+                text = file.read()
+        except FileNotFoundError:
+            console.print(
+                format_error(
+                    f"[red]Couldn't find file or directory[/] [bold]{path}[/]\n\n"
+                    "Please check that the path is valid and try again."
+                )
+            )
+            sys.exit(100)
 
         try:
             file_violations = check(
@@ -49,7 +69,7 @@ def check_style(args) -> None:
             )
         except SyntaxError as error:
             console.print(
-                Panel.fit(
+                format_error(
                     (
                         f"[bold red]Couldn't parse the LookML in[/bold red] "
                         f"{format_path(path)}\n\nParser error: [red]{error}[/red]\n\n"
@@ -60,10 +80,7 @@ def check_style(args) -> None:
                         "with the file's contents to "
                         "[u blue link=https://github.com/joshtemple/lkml/issues/new]"
                         "https://github.com/joshtemple/lkml[/u blue link]"
-                    ),
-                    title="[bold red]Error[/bold red]",
-                    width=80,
-                    padding=(1, 2),
+                    )
                 )
             )
             sys.exit(100)
@@ -109,6 +126,24 @@ def check_style(args) -> None:
             console.print()
 
 
+def rule_code(value, pattern=re.compile(r"[A-Z]+\d+")):
+    if not pattern.match(value):
+        console.print(
+            format_error(
+                f"[bold red]You specified an invalid rule code:[/] [bold]{value}[/]"
+                "\n\nRule codes for --select and --ignore look like "
+                "[bold]D105[/] or [bold]M112[/]. "
+                "You can see all defined rule codes by running "
+                "[code]lkmlstyle rules[/]."
+                "\n\nIf the rule code looks right, perhaps you forgot to put "
+                "--select or --ignore at the end "
+                "of your command, after all file paths?"
+            )
+        )
+        raise argparse.ArgumentTypeError("invalid format for rule code")
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -118,7 +153,7 @@ def main():
     )
     parser.add_argument(
         "path",
-        nargs="*",
+        nargs="+",
         type=pathlib.Path,
         help="path(s) to the file or directory to check",
     )
@@ -127,6 +162,7 @@ def main():
         nargs="+",
         metavar="CODE",
         required=False,
+        type=rule_code,
         help="rule codes to exclude from checking, like 'D106' or 'M200'",
         default=[],
     )
@@ -135,6 +171,7 @@ def main():
         nargs="+",
         metavar="CODE",
         required=False,
+        type=rule_code,
         help="only check the specified rule codes, like 'D106' or 'M200'",
         default=[],
     )
@@ -160,11 +197,11 @@ def main():
         first_positional = str(args.path[0])
     except IndexError:
         pass
+
+    if first_positional == "rules":
+        print_rules_table()
     else:
-        if first_positional == "rules":
-            print_rules_table()
-        else:
-            check_style(args)
+        check_style(args)
 
 
 if __name__ == "__main__":
