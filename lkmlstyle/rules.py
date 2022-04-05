@@ -35,6 +35,7 @@ class Rule:
         return f"{self.__class__.__name__}<{self.code}>"
 
     def selects(self, lineage: str) -> bool:
+        """Given a lineage string, determine if this rule would select that node."""
         return any(lineage.endswith(selector) for selector in self.select)
 
     def applies_to(self, node: SyntaxNode, lineage: str) -> bool:
