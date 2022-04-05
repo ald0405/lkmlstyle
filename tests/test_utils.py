@@ -1,4 +1,3 @@
-from functools import partial
 import lkml
 from lkml.tree import PairNode, BlockNode
 from lkmlstyle.utils import (
@@ -7,8 +6,9 @@ from lkmlstyle.utils import (
     find_descendant_by_lineage,
 )
 
-# Always parse with document=False so we don't have to deal with the DocumentNode
-parse = partial(lkml.parse, document=False)
+# Strip away the DocumentNode and its container
+def parse(text: str):
+    return lkml.parse(text).container.items
 
 
 def test_find_child_by_type_should_work():
