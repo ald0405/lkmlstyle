@@ -23,6 +23,10 @@ def print_rules_table() -> None:
     console.print(table)
 
 
+def format_path(path: pathlib.Path) -> str:
+    return f"[dim]{path.parent}/[/dim][bold]{path.name}[/bold]"
+
+
 def check_style(args) -> None:
     paths = []
     for path in args.path:
