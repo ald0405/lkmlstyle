@@ -92,7 +92,7 @@ def choose_rules(
         suffix = (
             "are not valid rule codes"
             if len(invalid_rules) > 1
-            else "is not a valid rule code"
+            else "is not a defined rule code"
         )
         raise ValueError(f"{', '.join(invalid_rules)} {suffix}")
 
