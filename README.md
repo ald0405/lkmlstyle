@@ -6,6 +6,8 @@
 
 ## Installation
 
+lkmlstyle requires Python 3.9 or higher. To check your Python version, run `python --version`.
+
 Install lkmlstyle with pip:
 
 ```
