@@ -27,7 +27,10 @@ def print_rules_table() -> None:
 
 
 def format_path(path: pathlib.Path) -> str:
-    return f"[dim]{path.parent}/[/dim][bold]{path.name}[/bold]"
+    if str(path.parent) == ".":
+        return f"[bold]{path.name}[/bold]"
+    else:
+        return f"[dim]{path.parent}/[/][bold]{path.name}[/bold]"
 
 
 def format_error(message: str, title: str = "Error") -> Panel:
