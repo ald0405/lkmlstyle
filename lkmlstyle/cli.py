@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.theme import Theme
-from lkmlstyle.check import check, logs_handler
+from lkmlstyle.check import Config, check, logs_handler, parse_config
 from lkmlstyle.rules import ALL_RULES
 
 console = Console(theme=Theme({"code": "white on #2D3138"}))
@@ -43,15 +43,18 @@ def format_error(message: str, title: str = "Error") -> Panel:
 
 
 def check_style(args) -> None:
+    config = parse_config() or Config()
+    # CLI args override any ignores and selects in the config file
+    config.override(select=tuple(args.select), ignore=tuple(args.ignore))
+    ruleset = config.refine(ruleset=ALL_RULES)
+    failed = False
+
     paths = []
     for path in args.path:
         if path.is_dir():
             paths.extend(path.glob("**/*.lkml"))
         else:
             paths.append(path)
-
-    console.print()
-    failed = False
 
     for path in sorted(set(paths)):
         violations = []
@@ -69,9 +72,7 @@ def check_style(args) -> None:
             sys.exit(101)
 
         try:
-            file_violations = check(
-                text, select=tuple(args.select), ignore=tuple(args.ignore)
-            )
+            file_violations = check(text, ruleset)
         except SyntaxError as error:
             console.print(
                 format_error(

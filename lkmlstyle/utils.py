@@ -1,17 +1,17 @@
 from functools import partial
-from typing import Optional, Callable
+from typing import Callable
 from lkml.tree import SyntaxNode, PairNode, BlockNode
 from lkmlstyle.types import HasType
 
 
-def find_child_by_type(node: SyntaxNode, node_type: str) -> Optional[SyntaxNode]:
+def find_child_by_type(node: SyntaxNode, node_type: str) -> SyntaxNode | None:
     for child in node.children or []:
         if isinstance(child, HasType) and child.type.value == node_type:
             return child
     return None
 
 
-def find_descendant_by_lineage(node: SyntaxNode, lineage: str) -> Optional[SyntaxNode]:
+def find_descendant_by_lineage(node: SyntaxNode, lineage: str) -> SyntaxNode | None:
     child = node
     for generation in lineage.split("."):
         match = find_child_by_type(child, node_type=generation)
@@ -49,8 +49,8 @@ def node_has_at_least_one_valid_child(
 def block_has_valid_parameter(
     block: BlockNode,
     parameter_name: str,
-    value: Optional[str] = None,
-    negative: Optional[bool] = False,
+    value: str | None = None,
+    negative: bool | None = False,
 ) -> bool:
     # TODO: Make sure this actually works
     if not isinstance(block, BlockNode):
@@ -84,7 +84,7 @@ def block_has_any_valid_parameter(block: BlockNode, parameters: dict) -> bool:
 
 
 def node_has_at_least_one_child_with_valid_parameter(
-    node: SyntaxNode, parameter_name: str, value: Optional[str] = None
+    node: SyntaxNode, parameter_name: str, value: str | None = None
 ):
     return node_has_at_least_one_valid_child(
         node,

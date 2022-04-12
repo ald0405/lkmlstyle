@@ -1,7 +1,6 @@
 from collections import deque
 from dataclasses import dataclass
 import logging
-from typing import Union, Optional
 import yaml
 import lkml
 from lkml.visitors import BasicVisitor
@@ -32,8 +31,8 @@ def resolve_overrides(
 
 def choose_rules(
     ruleset: tuple[Rule, ...],
-    ignore: Optional[tuple[str, ...]] = None,
-    select: Optional[tuple[str, ...]] = None,
+    ignore: tuple[str, ...] | None = None,
+    select: tuple[str, ...] | None = None,
 ) -> tuple[Rule, ...]:
     """Return the relevant rules given some selected and ignored rule codes."""
     if ignore and not isinstance(ignore, tuple):
@@ -64,9 +63,9 @@ def choose_rules(
 
 @dataclass
 class Config:
-    custom_rules: Optional[tuple[Rule, ...]] = None
-    select: Optional[tuple[str, ...]] = None
-    ignore: Optional[tuple[str, ...]] = None
+    custom_rules: tuple[Rule, ...] | None = None
+    select: tuple[str, ...] | None = None
+    ignore: tuple[str, ...] | None = None
 
     @classmethod
     def from_file(cls, fp):
@@ -89,8 +88,17 @@ class Config:
 
         return cls(tuple(custom_rules), select, ignore, **config)
 
+    def override(
+        self,
+        select: tuple[str, ...] | None = None,
+        ignore: tuple[str, ...] | None = None,
+    ) -> None:
+        """Replace the config with other ignores or selections."""
+        self.select = tuple(select) if select else self.select
+        self.ignore = tuple(ignore) if ignore else self.ignore
+
     def refine(self, ruleset: tuple[Rule, ...]) -> tuple[Rule, ...]:
-        """Override, ignore, and select from a ruleset."""
+        """Override, ignore, and select rules from an existing ruleset."""
         if self.custom_rules:
             all_rules = resolve_overrides(ruleset, self.custom_rules)
         else:
@@ -99,7 +107,7 @@ class Config:
         return choose_rules(all_rules, self.ignore, self.select)
 
 
-def parse_config() -> Optional[Config]:
+def parse_config() -> Config | None:
     """Attempt to load config from file."""
     try:
         with open("lkmlstyle.yaml", "r") as file:
@@ -127,12 +135,9 @@ def track_lineage(method):
 
 
 class StyleCheckVisitor(BasicVisitor):
-    def __init__(self, ruleset: tuple[Rule, ...], config: Optional[Config]):
+    def __init__(self, ruleset: tuple[Rule, ...]):
         super().__init__()
-        if config:
-            self.ruleset = config.refine(ruleset)
-        else:
-            self.ruleset = ruleset
+        self.ruleset = ruleset
         self._lineage: deque = deque()  # Faster than list for append/pop
         self.violations: list[tuple] = []
         self.context = NodeContext()
@@ -142,7 +147,7 @@ class StyleCheckVisitor(BasicVisitor):
         return ".".join(self._lineage)
 
     @track_lineage
-    def _visit(self, node: Union[SyntaxNode, SyntaxToken]) -> None:
+    def _visit(self, node: SyntaxNode | SyntaxToken) -> None:
         if isinstance(node, SyntaxToken):
             return
 
@@ -169,17 +174,9 @@ class StyleCheckVisitor(BasicVisitor):
                 child.accept(self)
 
 
-def check(
-    text: str,
-    ignore: Optional[tuple[str, ...]] = None,
-    select: Optional[tuple[str, ...]] = None,
-) -> list[tuple]:
+def check(text: str, ruleset: tuple[Rule, ...]) -> list[tuple]:
     """Validate a LookML string, given a set of rule codes to select and/or ignore."""
-    config = parse_config()
-    config.ignore = config.ignore if config.ignore else ignore
-    config.select = config.select if config.select else select
-    visitor = StyleCheckVisitor(ALL_RULES, config)
-
+    visitor = StyleCheckVisitor(ruleset)
     tree = lkml.parse(text)
     tree.accept(visitor)
     return visitor.violations

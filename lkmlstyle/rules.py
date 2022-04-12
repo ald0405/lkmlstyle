@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Sequence, Union
+from typing import Sequence
 import dataclasses
 from dataclasses import dataclass, field
 from functools import partial
@@ -37,7 +37,7 @@ def deserialize_partial(f: dict) -> partial:
 class NodeContext:
     """State required to check for rule violations"""
 
-    previous_node: dict[str, Optional[SyntaxNode]] = field(default_factory=dict)
+    previous_node: dict[str, SyntaxNode | None] = field(default_factory=dict)
     table_to_view: dict[str, str] = field(default_factory=dict)
 
 
@@ -46,9 +46,9 @@ class Rule:
     title: str
     code: str
     rationale: str
-    select: Union[str, tuple[str, ...]]
+    select: str | tuple[str, ...]
     filters: tuple[partial[bool], ...]
-    filter_on: Optional[str] = None
+    filter_on: str | None = None
 
     def __post_init__(self):
         # If `select` arg is a string, wrap it in a tuple
@@ -101,7 +101,7 @@ class Rule:
         """Determine if node follows the rule."""
         raise NotImplementedError
 
-    def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+    def get_node_value(self, node: SyntaxNode) -> str | None:
         """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.value.value
@@ -114,7 +114,7 @@ class Rule:
 @dataclass(frozen=True, repr=False)
 class PatternMatchRule(Rule):
     regex: str
-    negative: Optional[bool] = False
+    negative: bool | None = False
 
     def __post_init__(self):
         super().__post_init__()
@@ -139,7 +139,7 @@ class PatternMatchRule(Rule):
 @dataclass(frozen=True, repr=False)
 class ParameterRule(Rule):
     criteria: partial[bool]
-    negative: Optional[bool] = False
+    negative: bool | None = False
 
     def __dict__(self) -> dict:  # type: ignore[override]
         rule = super().__dict__()
@@ -168,7 +168,7 @@ class OrderRule(Rule):
     alphabetical: bool = False
     is_first: bool = False
     use_key: bool = True
-    order: Optional[Sequence[str]] = None
+    order: Sequence[str] | None = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -179,7 +179,7 @@ class OrderRule(Rule):
                 "the sort order"
             )
 
-    def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+    def get_node_value(self, node: SyntaxNode) -> str | None:
         """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.type.value if self.use_key else node.value.value
