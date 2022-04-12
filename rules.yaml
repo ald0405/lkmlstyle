@@ -1,0 +1,360 @@
+- title: Dimension name not in snake case
+  code: D101
+  rationale: Dimension names should match the conventional format, which is snake
+    case—words in lowercase, separated by underscores. For example, **order_id** instead
+    of **orderId** or **OrderID**.
+  select:
+  - dimension
+  - dimension_group
+  filters: []
+  filter_on: null
+  regex: ^[_a-z0-9]+$
+  negative: false
+  type: PatternMatchRule
+- title: Measure name not in snake case
+  code: M103
+  rationale: Measure names should match the conventional format, which is snake case—words
+    in lowercase, separated by underscores. For example, **count_orders** instead
+    of **OrderCount**.
+  select:
+  - measure
+  filters: []
+  filter_on: null
+  regex: ^[_a-z0-9]+$
+  negative: false
+  type: PatternMatchRule
+- title: View name not in snake case
+  code: V100
+  rationale: View names should match the conventional format, which is snake case—words
+    in lowercase, separated by underscores. For example, **all_orders** instead of
+    **allOrders** or **AllOrders**.
+  select:
+  - view
+  filters: []
+  filter_on: null
+  regex: ^[_a-z0-9]+$
+  negative: false
+  type: PatternMatchRule
+- title: Name of count measure doesn't start with 'count_'
+  code: M100
+  rationale: You should explicitly state the aggregation type in the dimension name
+    because it makes it easier for other developers and Explore users to understand
+    how the measure is calculated.
+  select:
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: type
+    value: count
+  filter_on: null
+  regex: ^count_
+  negative: false
+  type: PatternMatchRule
+- title: Name of sum measure doesn't start with 'total_'
+  code: M101
+  rationale: You should explicitly state the aggregation type in the dimension name
+    because it makes it easier for other developers and Explore users to understand
+    how the measure is calculated.
+  select:
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: type
+    value: sum
+  filter_on: null
+  regex: ^total_
+  negative: false
+  type: PatternMatchRule
+- title: Name of average measure doesn't start with 'avg_'
+  code: M102
+  rationale: You should explicitly state the aggregation type in the dimension name
+    because it makes it easier for other developers and Explore users to understand
+    how the measure is calculated.
+  select:
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: type
+    value: average
+  filter_on: null
+  regex: ^(?:avg|average)_
+  negative: false
+  type: PatternMatchRule
+- title: Yesno dimension doesn't start with 'is_' or 'has_'
+  code: D100
+  rationale: Wording the name of a **yesno** dimension as a question makes it clear
+    to the user what a yes or no value represents.
+  select:
+  - dimension
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: type
+    value: yesno
+  filter_on: null
+  regex: ^(?:is|has)_
+  negative: false
+  type: PatternMatchRule
+- title: Measure references table column directly
+  code: M110
+  rationale: Measures should not directly reference table columns, but should instead
+    reference dimensions that reference table columns. This way, the dimension can
+    be a layer of abstraction and single source of truth for **all** measures that
+    reference it.
+  select:
+  - measure.sql
+  filters: []
+  filter_on: null
+  regex: \$\{TABLE\}
+  negative: true
+  type: PatternMatchRule
+- title: Redundant type specification for string dimension
+  code: D300
+  rationale: 'By default, Looker defines dimensions with **type: string**. Explicitly
+    stating a string-typed dimension is redundant, the **type** parameter can be removed.'
+  select:
+  - dimension.type
+  filters: []
+  filter_on: null
+  regex: ^string$
+  negative: true
+  type: PatternMatchRule
+- title: Redundant type specification for join
+  code: J100
+  rationale: 'By default, Looker defines joins with **type: left_outer**. Explicitly
+    stating a left outer join is redundant, the **type** parameter can be removed.'
+  select:
+  - join.type
+  filters: []
+  filter_on: null
+  regex: ^left_outer$
+  negative: true
+  type: PatternMatchRule
+- title: Dimension group name ends with redundant word
+  code: D200
+  rationale: "When Looker creates the underlying dimensions, Looker appends the name\
+    \ of the timeframe to the dimension group name. For example, for a dimension group\
+    \ called **order_date**, Looker will create dimensions with redundant names:\n\
+    \ * order_date_date\n * order_date_month\n * order_date_year\n * ...\n\nInstead,\
+    \ use **order** as the dimension group name, which becomes **order_date**, **order_month**,\
+    \ etc."
+  select:
+  - dimension_group
+  filters: []
+  filter_on: null
+  regex: _(?:at|date|time)$
+  negative: true
+  type: PatternMatchRule
+- title: Explore doesn't declare fields
+  code: E100
+  rationale: 'When fields are explicitly defined, LookML developers can easily identify
+    the fields included in the Explore without having to reference the view file or
+    loading the Explore page.
+
+
+    This is especially helpful when the Explore includes multiple joins and a subset
+    of fields from each joined model.'
+  select:
+  - explore
+  filters: []
+  filter_on: null
+  criteria:
+    function: block_has_valid_parameter
+    parameter_name: fields
+  negative: false
+  type: ParameterRule
+- title: Visible dimension missing description
+  code: D301
+  rationale: Dimensions that are visible in the Explore page should have a description
+    so users understand how and why to use them, along with any caveats.
+  select:
+  - dimension
+  - dimension_group
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: hidden
+    value: 'yes'
+    negative: true
+  filter_on: null
+  criteria:
+    function: block_has_valid_parameter
+    parameter_name: description
+  negative: false
+  type: ParameterRule
+- title: Visible measure missing description
+  code: M112
+  rationale: Measures that are visible in the Explore page should have a description
+    so users understand how and why to use them, along with any caveats.
+  select:
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: hidden
+    value: 'yes'
+    negative: true
+  filter_on: null
+  criteria:
+    function: block_has_valid_parameter
+    parameter_name: description
+  negative: false
+  type: ParameterRule
+- title: View must define at least one primary key dimension
+  code: V110
+  rationale: Views must define a primary key so that any Explores that reference them
+    can take advantage of symmetric aggregates and join them properly to views.
+  select:
+  - view
+  filters: []
+  filter_on: null
+  criteria:
+    function: node_has_at_least_one_child_with_valid_parameter
+    parameter_name: primary_key
+    value: 'yes'
+  negative: false
+  type: ParameterRule
+- title: View missing view label
+  code: V111
+  rationale: 'Views should define a view label to provide a user-friendly name for
+    the view in Explores. Looker generates title-cased names for views based on the
+    view name in LookML, but these names aren''t always useful for users in Explores.
+    For example, an auto-generated view name **Prod Sessions L3d** (generated from
+    view: prod_sessions_l3d) is not as succinct or informational as **Web Sessions**.'
+  select:
+  - view
+  filters: []
+  filter_on: null
+  criteria:
+    function: node_has_at_least_one_child_with_valid_parameter
+    parameter_name: view_label
+  negative: false
+  type: ParameterRule
+- title: Primary key dimension not hidden
+  code: D302
+  rationale: Primary keys are not typically used directly in Explores because users
+    are more interested in aggregates like measures, which reduce the grain beyond
+    the grain of the primary key. Thus, these dimensions should be hidden.
+  select:
+  - dimension
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: primary_key
+    value: 'yes'
+  filter_on: null
+  criteria:
+    function: block_has_valid_parameter
+    parameter_name: hidden
+    value: 'yes'
+  negative: false
+  type: ParameterRule
+- title: Count measure doesn't specify a filter
+  code: LAMS:F3
+  rationale: "By default, Looker will implement any non-filtered & non-distinct count\
+    \ field as a **COUNT(*)**. Filtering such \"plain\" counts on **PK IS NOT NULL**\
+    \ ensures correct counts in all of the following uses of the field:\n * Counting\
+    \ only that table\n * Counting that table when joined on as a **one-to-one** or\
+    \ **one-to-zero** table\n * Counting that table with symmetric aggregates when\
+    \ joined on as a **many_to_one** table, and counting that table in explores with\
+    \ join paths.\n\n**Note:** The LookML filter syntax for \"is not null\" varies\
+    \ depending on the type of the field. For strings, use **-NULL**. For numbers,\
+    \ use **NOT NULL**."
+  select:
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: type
+    value: count
+  filter_on: null
+  criteria:
+    function: block_has_valid_parameter
+    parameter_name: filters
+  negative: false
+  type: ParameterRule
+- title: Dimension not in alphabetical order
+  code: D106
+  rationale: 'Sort dimensions alphabetically to make it easier to find a dimension
+    while scrolling through a view file.
+
+
+    A dimension or dimension group violates this rule if it is not alphabetically
+    sorted with respect to the previous dimension or dimension group.'
+  select:
+  - dimension
+  - dimension_group
+  filters: []
+  filter_on: null
+  alphabetical: true
+  is_first: false
+  use_key: true
+  order: null
+  type: OrderRule
+- title: Measure not in alphabetical order
+  code: M106
+  rationale: 'Sort measures alphabetically to make it easier to find a measure while
+    scrolling through a view file.
+
+
+    A measure violates this rule if it is not alphabetically sorted with respect to
+    the previous measure.'
+  select:
+  - measure
+  filters: []
+  filter_on: null
+  alphabetical: true
+  is_first: false
+  use_key: true
+  order: null
+  type: OrderRule
+- title: Primary key dimension not the first dimension in this view
+  code: D107
+  rationale: The primary key should be listed first in a view so developers quickly
+    understand the grain of the view and what a single record represents.
+  select:
+  - dimension
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: primary_key
+    value: 'yes'
+  filter_on: null
+  alphabetical: false
+  is_first: true
+  use_key: true
+  order: null
+  type: OrderRule
+- title: Dimension label includes redundant "Yes/No"
+  code: D303
+  rationale: For **yesno** dimensions, Looker adds "Yes/No" to the end of the dimension's
+    label by default, so there's no need to include it in the label.
+  select:
+  - dimension.label
+  filters: []
+  filter_on: null
+  regex: (?i)Yes/No
+  negative: true
+  type: PatternMatchRule
+- title: View uses the same table as another view
+  code: V112
+  rationale: Views should not have the same **sql_table_name** because two views with
+    the same table name are effectively the same view. Instead, consolidate these
+    views into a single view.
+  select:
+  - view
+  filters: []
+  filter_on: null
+  type: DuplicateViewRule
+- title: Name of persistent derived table view doesn't start with 'pdt_'
+  code: V113
+  rationale: Views that define persistent derived tables should be prefixed to make
+    it easy to identify views based on PDTs.
+  select:
+  - view
+  filters:
+  - function: block_has_any_valid_parameter
+    parameters:
+      datagroup_trigger: null
+      sql_trigger_value: null
+      interval_trigger: null
+      persist_for: null
+      materialized_view: yes
+  filter_on: derived_table
+  regex: ^pdt_
+  negative: false
+  type: PatternMatchRule

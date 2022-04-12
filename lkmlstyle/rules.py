@@ -1,14 +1,36 @@
 import re
 from typing import Optional, Sequence, Union
+import dataclasses
 from dataclasses import dataclass, field
 from functools import partial
 from lkml.tree import SyntaxNode, PairNode, BlockNode
 from lkmlstyle.utils import (
     find_child_by_type,
     find_descendant_by_lineage,
-    node_has_at_least_one_valid_child,
+    node_has_at_least_one_child_with_valid_parameter,
     block_has_valid_parameter,
+    block_has_any_valid_parameter,
 )
+
+funcs = {
+    func.__name__: func
+    for func in [
+        find_child_by_type,
+        find_descendant_by_lineage,
+        node_has_at_least_one_child_with_valid_parameter,
+        block_has_valid_parameter,
+        block_has_any_valid_parameter,
+    ]
+}
+
+
+def serialize_partial(f: partial) -> dict:
+    return {"function": f.func.__name__, **f.keywords}
+
+
+def deserialize_partial(f: dict) -> partial:
+    func = funcs[f.pop("function")]
+    return partial(func, **f)  # type: ignore[arg-type]
 
 
 @dataclass
@@ -36,6 +58,20 @@ class Rule:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.code}>"
+
+    def __dict__(self) -> dict:  # type: ignore[override]
+        rule = dataclasses.asdict(self)
+        rule["type"] = self.__class__.__name__
+        rule["filters"] = [serialize_partial(partial) for partial in rule["filters"]]
+        return rule
+
+    @classmethod
+    def from_dict(cls, kwargs: dict):
+        kwargs["select"] = tuple(kwargs["select"])
+        kwargs["filters"] = tuple(
+            deserialize_partial(partial) for partial in kwargs["filters"]
+        )
+        return cls(**kwargs)
 
     def selects(self, lineage: str) -> bool:
         """Given a lineage string, determine if this rule would select that node."""
@@ -87,7 +123,7 @@ class PatternMatchRule(Rule):
 
     def _matches(self, string: str) -> bool:
         """Check a string against the rule's regex."""
-        matched = bool(self.pattern.search(string))  # type: ignore
+        matched = bool(self.pattern.search(string))  # type: ignore[attr-defined]
         return not matched if self.negative else matched
 
     def followed_by(
@@ -104,6 +140,20 @@ class PatternMatchRule(Rule):
 class ParameterRule(Rule):
     criteria: partial[bool]
     negative: Optional[bool] = False
+
+    def __dict__(self) -> dict:  # type: ignore[override]
+        rule = super().__dict__()
+        rule["criteria"] = serialize_partial(self.criteria)
+        return rule
+
+    @classmethod
+    def from_dict(cls, kwargs: dict):
+        kwargs["select"] = tuple(kwargs["select"])
+        kwargs["filters"] = tuple(
+            deserialize_partial(partial) for partial in kwargs["filters"]
+        )
+        kwargs["criteria"] = deserialize_partial(kwargs["criteria"])
+        return cls(**kwargs)
 
     def followed_by(
         self, node: SyntaxNode, context: NodeContext
@@ -424,10 +474,9 @@ ALL_RULES = (
         select="view",
         filters=tuple(),
         criteria=partial(
-            node_has_at_least_one_valid_child,
-            is_valid=partial(
-                block_has_valid_parameter, parameter_name="primary_key", value="yes"
-            ),
+            node_has_at_least_one_child_with_valid_parameter,
+            parameter_name="primary_key",
+            value="yes",
         ),
     ),
     ParameterRule(
@@ -445,8 +494,8 @@ ALL_RULES = (
         select="view",
         filters=tuple(),
         criteria=partial(
-            node_has_at_least_one_valid_child,
-            is_valid=partial(block_has_valid_parameter, parameter_name="view_label"),
+            node_has_at_least_one_child_with_valid_parameter,
+            parameter_name="view_label",
         ),
     ),
     ParameterRule(
@@ -573,23 +622,22 @@ ALL_RULES = (
         select="view",
         regex=r"^pdt_",
         filter_on="derived_table",
-        filters=tuple(
-            [
-                lambda x: block_has_valid_parameter(
-                    x, parameter_name="datagroup_trigger"
-                )
-                or block_has_valid_parameter(x, parameter_name="sql_trigger_value")
-                or block_has_valid_parameter(x, parameter_name="interval_trigger")
-                or block_has_valid_parameter(x, parameter_name="persist_for")
-                or block_has_valid_parameter(
-                    x, parameter_name="materialized_view", value="yes"
-                )
-            ]
+        filters=(
+            partial(
+                block_has_any_valid_parameter,
+                parameters={
+                    "datagroup_trigger": None,
+                    "sql_trigger_value": None,
+                    "interval_trigger": None,
+                    "persist_for": None,
+                    "materialized_view": "yes",
+                },
+            ),
         ),
     ),
 )
 
-RULES_BY_CODE = {}
+RULES_BY_CODE: dict[str, Rule] = {}
 for rule in ALL_RULES:
     if rule.code in RULES_BY_CODE:
         raise KeyError(f"A rule with code {rule.code} already exists")

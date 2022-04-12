@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Optional, Callable
 from lkml.tree import SyntaxNode, PairNode, BlockNode
 from lkmlstyle.types import HasType
@@ -73,3 +74,21 @@ def block_has_valid_parameter(
 
     valid = node_has_at_least_one_valid_child(block, is_valid_param)
     return not valid if negative else valid
+
+
+def block_has_any_valid_parameter(block: BlockNode, parameters: dict) -> bool:
+    return any(
+        block_has_valid_parameter(block, name, value)
+        for name, value in parameters.items()
+    )
+
+
+def node_has_at_least_one_child_with_valid_parameter(
+    node: SyntaxNode, parameter_name: str, value: Optional[str] = None
+):
+    return node_has_at_least_one_valid_child(
+        node,
+        is_valid=partial(
+            block_has_valid_parameter, parameter_name=parameter_name, value=value
+        ),
+    )
