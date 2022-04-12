@@ -51,6 +51,8 @@ def check_style(args) -> None:
             paths.append(path)
 
     console.print()
+    failed = False
+
     for path in sorted(set(paths)):
         violations = []
 
@@ -64,7 +66,7 @@ def check_style(args) -> None:
                     "Please check that the path is valid and try again."
                 )
             )
-            sys.exit(100)
+            sys.exit(101)
 
         try:
             file_violations = check(
@@ -86,12 +88,13 @@ def check_style(args) -> None:
                     )
                 )
             )
-            sys.exit(100)
+            sys.exit(101)
 
         violations.extend(file_violations)
         lines = text.split("\n")
 
         if violations:
+            failed = True
             console.rule(path.name, style="#9999ff")
             console.print()
         for violation in violations:
@@ -127,6 +130,9 @@ def check_style(args) -> None:
                         no_wrap=True,
                     )
             console.print()
+
+    if failed:
+        sys.exit(100)
 
 
 def rule_code(value, pattern=re.compile(r"[A-Z]+\d+")):
