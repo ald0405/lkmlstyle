@@ -10,6 +10,7 @@ from lkmlstyle.rules import (
     Rule,
     ALL_RULES,
 )
+from lkmlstyle.exceptions import InvalidConfig, InvalidRuleCode
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -50,7 +51,7 @@ def choose_rules(
             if len(invalid_rules) > 1
             else "is not a defined rule code"
         )
-        raise ValueError(f"{', '.join(invalid_rules)} {suffix}")
+        raise InvalidRuleCode(f"{', '.join(invalid_rules)} {suffix}")
 
     codes = codeset & set(select or codeset) - set(ignore or tuple())
     if not codes:
@@ -71,6 +72,9 @@ class Config:
     def from_file(cls, fp):
         config = yaml.safe_load(fp)
 
+        if config is None:
+            raise ValueError("Config loaded from file is None")
+
         # Create a mapping from rule name to rule class
         name_to_rule: dict[str, type] = {
             c.__name__: c for c in set(c.__class__ for c in ALL_RULES)
@@ -79,9 +83,28 @@ class Config:
         # Override rule definitions with custom rules
         custom_rules: list[Rule] = []
         for rule in config.pop("custom_rules", []):
-            name: str = rule.pop("type")
-            rule_cls: type = name_to_rule[name]
-            custom_rules.append(rule_cls.from_dict(rule))
+            try:
+                name: str = rule.pop("type")
+            except KeyError:
+                raise InvalidConfig(
+                    "All custom rules must be defined with a 'type' key, "
+                    "for example: 'type: PatternMatchRule'"
+                )
+
+            try:
+                rule_cls: type = name_to_rule[name]
+            except KeyError:
+                raise InvalidConfig(
+                    f"Rule type '{name}' is not a valid rule. "
+                    f"Valid rules are: {', '.join(name_to_rule.keys())}",
+                )
+
+            try:
+                custom_rule = rule_cls.from_dict(rule)
+            except KeyError as error:
+                raise InvalidConfig(str(error)) from error
+
+            custom_rules.append(custom_rule)
 
         select = tuple(config.pop("select", []))
         ignore = tuple(config.pop("ignore", []))

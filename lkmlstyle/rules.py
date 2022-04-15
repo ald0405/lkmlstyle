@@ -11,6 +11,7 @@ from lkmlstyle.utils import (
     block_has_valid_parameter,
     block_has_any_valid_parameter,
 )
+from lkmlstyle.exceptions import InvalidRule
 
 funcs = {
     func.__name__: func
@@ -29,7 +30,19 @@ def serialize_partial(f: partial) -> dict:
 
 
 def deserialize_partial(f: dict) -> partial:
-    func = funcs[f.pop("function")]
+    try:
+        name = f.pop("function")
+    except KeyError as error:
+        raise KeyError(
+            "Function definitions must contain the key "
+            "'function' with the function's name"
+        ) from error
+
+    try:
+        func = funcs[name]
+    except KeyError as error:
+        raise KeyError(f"Function '{name}' is not a valid function") from error
+
     return partial(func, **f)  # type: ignore[arg-type]
 
 
@@ -66,12 +79,22 @@ class Rule:
         return rule
 
     @classmethod
-    def from_dict(cls, kwargs: dict):
-        kwargs["select"] = tuple(kwargs["select"])
+    def _preprocess_dict(cls, kwargs: dict) -> dict:
+        kwargs["select"] = tuple(kwargs.get("select", []))
         kwargs["filters"] = tuple(
-            deserialize_partial(partial) for partial in kwargs["filters"]
+            deserialize_partial(partial) for partial in kwargs.get("filters", [])
         )
-        return cls(**kwargs)
+        return kwargs
+
+    @classmethod
+    def from_dict(cls, kwargs: dict):
+        kwargs = cls._preprocess_dict(kwargs)
+        try:
+            instance = cls(**kwargs)
+        except TypeError as error:
+            raise InvalidRule(str(error)) from error
+
+        return instance
 
     def selects(self, lineage: str) -> bool:
         """Given a lineage string, determine if this rule would select that node."""
@@ -147,13 +170,13 @@ class ParameterRule(Rule):
         return rule
 
     @classmethod
-    def from_dict(cls, kwargs: dict):
+    def _preprocess_dict(cls, kwargs: dict) -> dict:
         kwargs["select"] = tuple(kwargs["select"])
         kwargs["filters"] = tuple(
             deserialize_partial(partial) for partial in kwargs["filters"]
         )
         kwargs["criteria"] = deserialize_partial(kwargs["criteria"])
-        return cls(**kwargs)
+        return kwargs
 
     def followed_by(
         self, node: SyntaxNode, context: NodeContext
