@@ -1,7 +1,12 @@
+# To use this in your own project, copy it to the root of your LookML project's repo
+# and change the name of the file to `lkmlstyle.yaml`. lkmlstyle will automatically
+# configure itself from this file.
+
+# Rules to ignore, the same as passing --ignore at the command line
+ignore: [D106, D107]
+
 # If a rule's code already exists in the default rules, the custom rule will override
 # the default rule
-
-ignore: [D106, D107]
 custom_rules:
 - title: Name of count measure doesn't start with 'c_'
   code: M100
@@ -17,22 +22,3 @@ custom_rules:
   regex: "^c_"
   negative: false
   type: PatternMatchRule
-- title: Visible dimension or measure missing label
-  code: XD100
-  rationale: |
-    Dimensions and measures that are visible in the Explore page should have a label
-    so users understand how and why to use them, along with any caveats.
-  select:
-  - dimension
-  - dimension_group
-  - measure
-  filters:
-  - function: block_has_valid_parameter
-    parameter_name: hidden
-    value: 'yes'
-    negative: true
-  criteria:
-    function: block_has_valid_parameter
-    parameter_name: label
-  negative: false
-  type: ParameterRule
