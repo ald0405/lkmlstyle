@@ -3,6 +3,7 @@ from typing import Sequence
 import dataclasses
 from dataclasses import dataclass, field
 from functools import partial
+import json
 from lkml.tree import SyntaxNode, PairNode, BlockNode
 from lkmlstyle.utils import (
     find_child_by_type,
@@ -88,11 +89,19 @@ class Rule:
 
     @classmethod
     def from_dict(cls, kwargs: dict):
-        kwargs = cls._preprocess_dict(kwargs)
+        processed_kwargs = cls._preprocess_dict(kwargs.copy())
         try:
-            instance = cls(**kwargs)
+            instance = cls(**processed_kwargs)
         except TypeError as error:
-            raise InvalidRule(str(error)) from error
+            if "title" in kwargs:
+                message = (
+                    "While attempting to load specification for rule titled, "
+                    f"'{kwargs['title']}', encountered error:\n\n{error}"
+                )
+            else:
+                message = str(error)
+
+            raise InvalidRule(message) from error
 
         return instance
 
