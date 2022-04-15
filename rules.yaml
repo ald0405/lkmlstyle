@@ -1,3 +1,4 @@
+rules:
 - title: Dimension name not in snake case
   code: D101
   rationale: Dimension names should match the conventional format, which is snake
