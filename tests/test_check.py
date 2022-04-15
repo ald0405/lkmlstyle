@@ -58,8 +58,14 @@ def write_config(path: Path, data: dict[str]) -> None:
         yaml.safe_dump(data, file)
 
 
-def test_resolve_overrides_should_override_with_a_custom_rule(rules_by_code, ruleset):
-    custom_rule = replace(rules_by_code["D100"], select="dimension_group")
+@pytest.fixture
+def custom_rule(rules_by_code):
+    return replace(rules_by_code["D100"], select="dimension_group")
+
+
+def test_resolve_overrides_should_override_with_a_custom_rule(
+    custom_rule, rules_by_code, ruleset
+):
     resolved = resolve_overrides(ruleset, custom_rules=(custom_rule,))
     assert rules_by_code["M106"] in resolved
     assert rules_by_code["D100"] not in resolved
@@ -196,9 +202,28 @@ def test_config_from_file_with_invalid_rule_should_be_handled(tmp_path):
     assert "required keyword-only argument" in str(exc_info).lower()
 
 
-def test_config_override_should_replace_existing():
-    ...
+def test_config_override_should_replace_existing(ruleset):
+    config = Config(ruleset, select=("D100",), ignore=("M106",))
+    config.override(select=("D101",), ignore=("M107",))
+    assert "M107" in config.ignore
+    assert "M106" not in config.ignore
+    assert "D101" in config.select
+    assert "D100" not in config.select
 
 
-def test_config_refine_should_work():
-    ...
+def test_config_refine_should_work(ruleset, custom_rule):
+    config = Config(ignore=("D100",))
+    refined = config.refine(ruleset)
+    refined_codes = rules_to_codes(refined)
+    assert "D100" not in refined_codes
+    assert "M106" in refined_codes
+
+    config = Config(select=("D100",))
+    refined = config.refine(ruleset)
+    refined_codes = rules_to_codes(refined)
+    assert "D100" in refined_codes
+    assert "M106" not in refined_codes
+
+    config = Config(custom_rules=(custom_rule,))
+    refined = config.refine(ruleset)
+    assert custom_rule in refined
