@@ -100,11 +100,9 @@ class Config:
     def refine(self, ruleset: tuple[Rule, ...]) -> tuple[Rule, ...]:
         """Override, ignore, and select rules from an existing ruleset."""
         if self.custom_rules:
-            all_rules = resolve_overrides(ruleset, self.custom_rules)
-        else:
-            all_rules = ruleset
+            ruleset = resolve_overrides(ruleset, self.custom_rules)
 
-        return choose_rules(all_rules, self.ignore, self.select)
+        return choose_rules(ruleset, self.ignore, self.select)
 
 
 def parse_config() -> Config | None:
