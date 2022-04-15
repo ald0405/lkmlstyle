@@ -3,7 +3,7 @@ from lkmlstyle.rules import Rule, RULES_BY_CODE
 
 
 def get_rule_by_code(code: str) -> tuple[Rule]:
-    return tuple([RULES_BY_CODE[code]])
+    return (RULES_BY_CODE[code],)
 
 
 def test_measure_name_contains_count():
