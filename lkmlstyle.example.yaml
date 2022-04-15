@@ -14,7 +14,25 @@ custom_rules:
   - function: block_has_valid_parameter
     parameter_name: type
     value: count
-  filter_on: null
   regex: "^c_"
   negative: false
   type: PatternMatchRule
+- title: Visible dimension or measure missing label
+  code: XD100
+  rationale: |
+    Dimensions and measures that are visible in the Explore page should have a label
+    so users understand how and why to use them, along with any caveats.
+  select:
+  - dimension
+  - dimension_group
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: hidden
+    value: 'yes'
+    negative: true
+  criteria:
+    function: block_has_valid_parameter
+    parameter_name: label
+  negative: false
+  type: ParameterRule
