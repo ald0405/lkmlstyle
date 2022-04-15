@@ -4,8 +4,8 @@
 
 With lkmlstyle, you can:
 
- - Ignore rules you don't agree with
- - Modify existing rules by changing their YAML spec
+ - [Ignore rules you don't agree with](#ignoring-rules)
+ - [Modify existing rules by changing their YAML spec](#modifying-an-existing-rule)
  - Add new rules using simple YAML definitions
 
 ## Installation
