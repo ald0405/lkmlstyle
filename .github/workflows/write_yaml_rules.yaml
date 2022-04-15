@@ -16,7 +16,11 @@ jobs:
           cache: 'pip'
           cache-dependency-path: '**/requirements.txt'
       - run: pip install PyYAML && pip install -e .
-      - run: python .github/workflows/rules_to_yaml.py
-      - run: |
+      
+      - name: Update rules.yaml
+        run: python .github/workflows/rules_to_yaml.py
+        
+      - name: Commit changes to rules.yaml
+        run: |
           git add rules.yaml
           git diff-index --quiet HEAD || git commit -m "Updating rules.yaml" --author=.
