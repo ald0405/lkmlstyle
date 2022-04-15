@@ -353,7 +353,7 @@
       sql_trigger_value: null
       interval_trigger: null
       persist_for: null
-      materialized_view: yes
+      materialized_view: 'yes'
   filter_on: derived_table
   regex: ^pdt_
   negative: false
