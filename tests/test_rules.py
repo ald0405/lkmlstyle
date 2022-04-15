@@ -1,32 +1,37 @@
 import lkmlstyle
+from lkmlstyle.rules import Rule, RULES_BY_CODE
+
+
+def get_rule_by_code(code: str) -> tuple[Rule]:
+    return (RULES_BY_CODE[code],)
 
 
 def test_measure_name_contains_count():
     fails = "measure: users { type: count }"
     passes = "measure: count_users { type: count }"
-    assert lkmlstyle.check(fails, select=("M100",))
-    assert not lkmlstyle.check(passes, select=("M100",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("M100"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("M100"))
 
 
 def test_measure_name_contains_sum():
     fails = "measure: sale_price { type: sum }"
     passes = "measure: total_sale_price { type: sum }"
-    assert lkmlstyle.check(fails, select=("M101",))
-    assert not lkmlstyle.check(passes, select=("M101",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("M101"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("M101"))
 
 
 def test_measure_name_contains_avg():
     fails = "measure: sale_price { type: average }"
     passes = "measure: avg_sale_price { type: average }"
-    assert lkmlstyle.check(fails, select=("M102",))
-    assert not lkmlstyle.check(passes, select=("M102",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("M102"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("M102"))
 
 
 def test_yesno_name_is_question():
     fails = "dimension: partner { type: yesno }"
     passes = "dimension: is_partner { type: yesno }"
-    assert lkmlstyle.check(fails, select=("D100",))
-    assert not lkmlstyle.check(passes, select=("D100",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D100"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D100"))
 
 
 def test_dimension_group_timeframes():
@@ -58,8 +63,8 @@ def test_dimension_group_timeframes():
     }
     """
 
-    assert lkmlstyle.check(fails, select=("D200",))
-    assert not lkmlstyle.check(passes, select=("D200",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D200"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D200"))
 
 
 def test_measures_only_reference_dimensions():
@@ -79,23 +84,23 @@ def test_measures_only_reference_dimensions():
     }
     """
 
-    assert lkmlstyle.check(fails, select=("M110",))
-    assert not lkmlstyle.check(passes, select=("M110",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("M110"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("M110"))
 
 
 def test_redundant_dimension_type():
     fails = "dimension: order_id { type: string }"
     all_passes = ["dimension: order_id { }", "dimension: order_id { type: number }"]
-    assert lkmlstyle.check(fails, select=("D300",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D300"))
     for passes in all_passes:
-        assert not lkmlstyle.check(passes, select=("D300",))
+        assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D300"))
 
 
 def test_explore_must_declare_fields():
     fails = 'explore: orders { label: "Company Orders" }'
     passes = "explore: orders { fields: [ALL_FIELDS*] }"
-    assert lkmlstyle.check(fails, select=("E100",))
-    assert not lkmlstyle.check(passes, select=("E100",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("E100"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("E100"))
 
 
 def test_visible_dimensions_without_descriptions():
@@ -121,9 +126,9 @@ def test_visible_dimensions_without_descriptions():
         }""",
     ]
     for fails in all_fails:
-        assert lkmlstyle.check(fails, select=("D301",))
+        assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D301"))
     for passes in all_passes:
-        assert not lkmlstyle.check(passes, select=("D301",))
+        assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D301"))
 
 
 def test_view_defines_at_least_one_primary_key():
@@ -156,8 +161,8 @@ def test_view_defines_at_least_one_primary_key():
     }
     """
     for fails in all_fails:
-        assert lkmlstyle.check(fails, select=("V110",))
-    assert not lkmlstyle.check(passes, select=("V110",))
+        assert lkmlstyle.check(fails, ruleset=get_rule_by_code("V110"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("V110"))
 
 
 def test_primary_key_dimension_hidden():
@@ -181,8 +186,8 @@ def test_primary_key_dimension_hidden():
     }
     """
     for fails in all_fails:
-        assert lkmlstyle.check(fails, select=("D302",))
-    assert not lkmlstyle.check(passes, select=("D302",))
+        assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D302"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D302"))
 
 
 def test_count_measures_should_specify_a_filter():
@@ -200,8 +205,8 @@ def test_count_measures_should_specify_a_filter():
 		type: count
 	}
     """
-    assert lkmlstyle.check(fails, select=("LAMS:F3",))
-    assert not lkmlstyle.check(passes, select=("LAMS:F3",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("LAMS:F3"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("LAMS:F3"))
 
 
 def test_dimensions_alphabetical():
@@ -217,8 +222,8 @@ def test_dimensions_alphabetical():
     dimension: abd {}
     dimension: bcd {}
     """
-    assert lkmlstyle.check(fails, select=("D106",))
-    assert not lkmlstyle.check(passes, select=("D106",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D106"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D106"))
 
 
 def test_measure_alphabetical():
@@ -234,8 +239,8 @@ def test_measure_alphabetical():
     measure: abd {}
     measure: bcd {}
     """
-    assert lkmlstyle.check(fails, select=("M106",))
-    assert not lkmlstyle.check(passes, select=("M106",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("M106"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("M106"))
 
 
 def test_primary_key_dimension_should_be_first():
@@ -255,8 +260,8 @@ def test_primary_key_dimension_should_be_first():
     }
     dimension: bcd {}
     """
-    assert lkmlstyle.check(fails, select=("D107",))
-    assert not lkmlstyle.check(passes, select=("D107",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("D107"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("D107"))
 
 
 def test_views_should_not_have_the_same_sql_table_name():
@@ -276,8 +281,8 @@ def test_views_should_not_have_the_same_sql_table_name():
         sql_table_name: analytics.orders ;;
     }
     """
-    assert lkmlstyle.check(fails, select=("V112",))
-    assert not lkmlstyle.check(passes, select=("V112",))
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("V112"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("V112"))
 
 
 def test_duplicate_views_rule_works_with_derived_table():
@@ -289,4 +294,4 @@ def test_duplicate_views_rule_works_with_derived_table():
         }
     }
     """
-    assert not lkmlstyle.check(view, select=("V112",))
+    assert not lkmlstyle.check(view, ruleset=get_rule_by_code("V112"))

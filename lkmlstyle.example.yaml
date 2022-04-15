@@ -1,0 +1,24 @@
+# To use this in your own project, copy it to the root of your LookML project's repo
+# and change the name of the file to `lkmlstyle.yaml`. lkmlstyle will automatically
+# configure itself from this file.
+
+# Rules to ignore, the same as passing --ignore at the command line
+ignore: [D106, D107]
+
+# If a rule's code already exists in the default rules, the custom rule will override
+# the default rule
+custom_rules:
+- title: Name of count measure doesn't start with 'c_'
+  code: M100
+  rationale: You should explicitly state the aggregation type in the dimension name
+    because it makes it easier for other developers and Explore users to understand
+    how the measure is calculated.
+  select:
+  - measure
+  filters:
+  - function: block_has_valid_parameter
+    parameter_name: type
+    value: count
+  regex: "^c_"
+  negative: false
+  type: PatternMatchRule

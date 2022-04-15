@@ -9,8 +9,14 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.theme import Theme
-from lkmlstyle.check import check, logs_handler
+from lkmlstyle.check import Config, check, logs_handler, parse_config
 from lkmlstyle.rules import ALL_RULES
+from lkmlstyle.exceptions import (
+    InvalidRuleCode,
+    LkmlstyleException,
+    InvalidConfig,
+    InvalidRule,
+)
 
 console = Console(theme=Theme({"code": "white on #2D3138"}))
 
@@ -43,15 +49,53 @@ def format_error(message: str, title: str = "Error") -> Panel:
 
 
 def check_style(args) -> None:
+    try:
+        config = parse_config() or Config()
+        # CLI args override any ignores and selects in the config file
+        config.override(select=tuple(args.select), ignore=tuple(args.ignore))
+        ruleset = config.refine(ruleset=ALL_RULES)
+    except InvalidConfig as error:
+        console.print(
+            format_error(
+                "[bold red]Your config file isn't formatted "
+                "correctly and couldn't be parsed.[/]"
+                f"\n\n{error}."
+                "\n\nlkmlstyle read the invalid config file from "
+                f"{format_path(pathlib.Path.cwd() / 'lkmlstyle.yml')}"
+            )
+        )
+        sys.exit(error.code)
+    except InvalidRule as error:
+        console.print(
+            format_error(
+                "[bold red]Couldn't create a rule with the specification provided.[/]"
+                "\n\nUsually this "
+                "is because you've missed a required argument or provided an incorrect "
+                f"one. The error message was:\n\n[code]{error}[/]"
+                "\n\nlkmlstyle read the invalid config file from "
+                f"{format_path(pathlib.Path.cwd() / 'lkmlstyle.yml')}"
+            )
+        )
+        sys.exit(error.code)
+    except InvalidRuleCode as error:
+        console.print(
+            format_error(
+                "[bold red]Invalid rule code.[/]"
+                f"\n\n{error}. Run [code]lkmlstyle rules[/] to see all valid rule codes."
+                "\n\nlkmlstyle read your config file from "
+                f"{format_path(pathlib.Path.cwd() / 'lkmlstyle.yml')}"
+            )
+        )
+        sys.exit(error.code)
+
+    failed = False
+
     paths = []
     for path in args.path:
         if path.is_dir():
             paths.extend(path.glob("**/*.lkml"))
         else:
             paths.append(path)
-
-    console.print()
-    failed = False
 
     for path in sorted(set(paths)):
         violations = []
@@ -69,9 +113,7 @@ def check_style(args) -> None:
             sys.exit(101)
 
         try:
-            file_violations = check(
-                text, select=tuple(args.select), ignore=tuple(args.ignore)
-            )
+            file_violations = check(text, ruleset)
         except SyntaxError as error:
             console.print(
                 format_error(
@@ -210,7 +252,20 @@ def main():
     if first_positional == "rules":
         print_rules_table()
     else:
-        check_style(args)
+        try:
+            check_style(args)
+        except LkmlstyleException as error:
+            console.print(format_error(str(error)))
+            sys.exit(error.code)
+        except Exception:
+            console.print(
+                "[bold red]lkmlstyle encountered an unexpected issue.[/]"
+                "\n\nWe're not sure what happened, but you can see the traceback below."
+                "\n\n[dim]For support, please open an issue at "
+                "[link=https://github.com/spectacles-ci/lkmlstyle/]"
+                "https://github.com/spectacles-ci/lkmlstyle/[/link]\n"
+            )
+            raise
 
 
 if __name__ == "__main__":

@@ -1,21 +1,57 @@
 import re
-from typing import Optional, Sequence, Union
+from typing import Sequence
+import dataclasses
 from dataclasses import dataclass, field
 from functools import partial
+import json
 from lkml.tree import SyntaxNode, PairNode, BlockNode
 from lkmlstyle.utils import (
     find_child_by_type,
     find_descendant_by_lineage,
-    node_has_at_least_one_valid_child,
+    node_has_at_least_one_child_with_valid_parameter,
     block_has_valid_parameter,
+    block_has_any_valid_parameter,
 )
+from lkmlstyle.exceptions import InvalidRule
+
+funcs = {
+    func.__name__: func
+    for func in [
+        find_child_by_type,
+        find_descendant_by_lineage,
+        node_has_at_least_one_child_with_valid_parameter,
+        block_has_valid_parameter,
+        block_has_any_valid_parameter,
+    ]
+}
+
+
+def serialize_partial(f: partial) -> dict:
+    return {"function": f.func.__name__, **f.keywords}
+
+
+def deserialize_partial(f: dict) -> partial:
+    try:
+        name = f.pop("function")
+    except KeyError as error:
+        raise KeyError(
+            "Function definitions must contain the key "
+            "'function' with the function's name"
+        ) from error
+
+    try:
+        func = funcs[name]
+    except KeyError as error:
+        raise KeyError(f"Function '{name}' is not a valid function") from error
+
+    return partial(func, **f)  # type: ignore[arg-type]
 
 
 @dataclass
 class NodeContext:
     """State required to check for rule violations"""
 
-    previous_node: dict[str, Optional[SyntaxNode]] = field(default_factory=dict)
+    previous_node: dict[str, SyntaxNode | None] = field(default_factory=dict)
     table_to_view: dict[str, str] = field(default_factory=dict)
 
 
@@ -24,9 +60,9 @@ class Rule:
     title: str
     code: str
     rationale: str
-    select: Union[str, tuple[str, ...]]
+    select: str | tuple[str, ...]
     filters: tuple[partial[bool], ...]
-    filter_on: Optional[str] = None
+    filter_on: str | None = None
 
     def __post_init__(self):
         # If `select` arg is a string, wrap it in a tuple
@@ -36,6 +72,38 @@ class Rule:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.code}>"
+
+    def __dict__(self) -> dict:  # type: ignore[override]
+        rule = dataclasses.asdict(self)
+        rule["type"] = self.__class__.__name__
+        rule["filters"] = [serialize_partial(partial) for partial in rule["filters"]]
+        return rule
+
+    @classmethod
+    def _preprocess_dict(cls, kwargs: dict) -> dict:
+        kwargs["select"] = tuple(kwargs.get("select", []))
+        kwargs["filters"] = tuple(
+            deserialize_partial(partial) for partial in kwargs.get("filters", [])
+        )
+        return kwargs
+
+    @classmethod
+    def from_dict(cls, kwargs: dict):
+        processed_kwargs = cls._preprocess_dict(kwargs.copy())
+        try:
+            instance = cls(**processed_kwargs)
+        except TypeError as error:
+            if "title" in kwargs:
+                message = (
+                    "While attempting to load specification for rule titled, "
+                    f"'{kwargs['title']}', encountered error:\n\n{error}"
+                )
+            else:
+                message = str(error)
+
+            raise InvalidRule(message) from error
+
+        return instance
 
     def selects(self, lineage: str) -> bool:
         """Given a lineage string, determine if this rule would select that node."""
@@ -65,7 +133,7 @@ class Rule:
         """Determine if node follows the rule."""
         raise NotImplementedError
 
-    def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+    def get_node_value(self, node: SyntaxNode) -> str | None:
         """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.value.value
@@ -78,7 +146,7 @@ class Rule:
 @dataclass(frozen=True, repr=False)
 class PatternMatchRule(Rule):
     regex: str
-    negative: Optional[bool] = False
+    negative: bool | None = False
 
     def __post_init__(self):
         super().__post_init__()
@@ -87,7 +155,7 @@ class PatternMatchRule(Rule):
 
     def _matches(self, string: str) -> bool:
         """Check a string against the rule's regex."""
-        matched = bool(self.pattern.search(string))  # type: ignore
+        matched = bool(self.pattern.search(string))  # type: ignore[attr-defined]
         return not matched if self.negative else matched
 
     def followed_by(
@@ -103,7 +171,21 @@ class PatternMatchRule(Rule):
 @dataclass(frozen=True, repr=False)
 class ParameterRule(Rule):
     criteria: partial[bool]
-    negative: Optional[bool] = False
+    negative: bool | None = False
+
+    def __dict__(self) -> dict:  # type: ignore[override]
+        rule = super().__dict__()
+        rule["criteria"] = serialize_partial(self.criteria)
+        return rule
+
+    @classmethod
+    def _preprocess_dict(cls, kwargs: dict) -> dict:
+        kwargs["select"] = tuple(kwargs["select"])
+        kwargs["filters"] = tuple(
+            deserialize_partial(partial) for partial in kwargs["filters"]
+        )
+        kwargs["criteria"] = deserialize_partial(kwargs["criteria"])
+        return kwargs
 
     def followed_by(
         self, node: SyntaxNode, context: NodeContext
@@ -118,7 +200,7 @@ class OrderRule(Rule):
     alphabetical: bool = False
     is_first: bool = False
     use_key: bool = True
-    order: Optional[Sequence[str]] = None
+    order: Sequence[str] | None = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -129,7 +211,7 @@ class OrderRule(Rule):
                 "the sort order"
             )
 
-    def get_node_value(self, node: SyntaxNode) -> Optional[str]:
+    def get_node_value(self, node: SyntaxNode) -> str | None:
         """Extract a value string from a node."""
         if isinstance(node, PairNode):
             return node.type.value if self.use_key else node.value.value
@@ -424,10 +506,9 @@ ALL_RULES = (
         select="view",
         filters=tuple(),
         criteria=partial(
-            node_has_at_least_one_valid_child,
-            is_valid=partial(
-                block_has_valid_parameter, parameter_name="primary_key", value="yes"
-            ),
+            node_has_at_least_one_child_with_valid_parameter,
+            parameter_name="primary_key",
+            value="yes",
         ),
     ),
     ParameterRule(
@@ -445,8 +526,8 @@ ALL_RULES = (
         select="view",
         filters=tuple(),
         criteria=partial(
-            node_has_at_least_one_valid_child,
-            is_valid=partial(block_has_valid_parameter, parameter_name="view_label"),
+            node_has_at_least_one_child_with_valid_parameter,
+            parameter_name="view_label",
         ),
     ),
     ParameterRule(
@@ -573,23 +654,22 @@ ALL_RULES = (
         select="view",
         regex=r"^pdt_",
         filter_on="derived_table",
-        filters=tuple(
-            [
-                lambda x: block_has_valid_parameter(
-                    x, parameter_name="datagroup_trigger"
-                )
-                or block_has_valid_parameter(x, parameter_name="sql_trigger_value")
-                or block_has_valid_parameter(x, parameter_name="interval_trigger")
-                or block_has_valid_parameter(x, parameter_name="persist_for")
-                or block_has_valid_parameter(
-                    x, parameter_name="materialized_view", value="yes"
-                )
-            ]
+        filters=(
+            partial(
+                block_has_any_valid_parameter,
+                parameters={
+                    "datagroup_trigger": None,
+                    "sql_trigger_value": None,
+                    "interval_trigger": None,
+                    "persist_for": None,
+                    "materialized_view": "yes",
+                },
+            ),
         ),
     ),
 )
 
-RULES_BY_CODE = {}
+RULES_BY_CODE: dict[str, Rule] = {}
 for rule in ALL_RULES:
     if rule.code in RULES_BY_CODE:
         raise KeyError(f"A rule with code {rule.code} already exists")
