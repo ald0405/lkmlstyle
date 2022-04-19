@@ -86,13 +86,13 @@ lkmlstyle repos/product-analytics/views/sessions.view.lkml --select D101
 
 All of lkmlstyle's existing rules can be defined as YAML. In your config file, you can define custom rules modifying existing rules to fit your needs.
 
-Let's say we wanted to modify the rule `M100`, which requires count measures be prefixed with `count_`, to require a prefix of `c_` instead.
+Let's say we wanted to modify the rule `M100`, which requires the names of count measures be prefixed with `count_`, to require a prefix of `c_` instead.
 
 Here's how we would do this with a custom rule override.
 
-1. First, we'd find the YAML definition for `M100` in the [`rules.yaml` file at the root of this repo](rules.yaml).
+1. First, we'd find the default YAML definition for `M100` in the [`rules.yaml` file at the root of this repo](rules.yaml). The rule uses a regular expression (regex), `"^count_"` to check for the word "count" at the beginning of measure names with type `count`.
 
-1. Then, we would copy it to the `custom_rules` section of our `lkmlstyle.yaml` config file (see [an example here](lkmlstyle.example.yaml)) and make the following modifications:
+1. Then, we would copy it to the `custom_rules` section of our `lkmlstyle.yaml` config file (see [an example here](lkmlstyle.example.yaml)) and make the following modifications to the `title` and `regex` fields:
 
 ```yaml
 custom_rules:
@@ -112,7 +112,7 @@ custom_rules:
   type: PatternMatchRule
 ```
 
-Since the YAML rule uses the same code `M100`, this rule definition will override the default definition of `M100`.
+Since the YAML rule uses the same code `M100`, this custom rule definition will override the default definition of `M100`. If you were to run lkmlstyle again, it would use the custom rule in its checks.
 
 You can also define your own rules in YAML using the building blocks that lkmlstyle makes available. More detailed documentation on how to do this is coming soon.
 
