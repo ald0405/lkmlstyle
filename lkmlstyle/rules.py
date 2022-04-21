@@ -3,7 +3,6 @@ from typing import Sequence
 import dataclasses
 from dataclasses import dataclass, field
 from functools import partial
-import json
 from lkml.tree import SyntaxNode, PairNode, BlockNode
 from lkmlstyle.utils import (
     find_child_by_type,
