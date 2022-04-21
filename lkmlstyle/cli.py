@@ -71,7 +71,8 @@ def check_style(args) -> None:
                 "[bold red]Couldn't create a rule with the specification provided.[/]"
                 "\n\nUsually this "
                 "is because you've missed a required argument or provided an incorrect "
-                f"one. The error message was:\n\n[code]{error}[/]"
+                f"one. Have you used the correct rule type? "
+                "The error message was:\n\n[code]{error}[/]"
                 "\n\nlkmlstyle read the invalid config file from "
                 f"{format_path(pathlib.Path.cwd() / 'lkmlstyle.yml')}"
             )
