@@ -262,8 +262,8 @@ def main():
                 "[bold red]lkmlstyle encountered an unexpected issue.[/]"
                 "\n\nWe're not sure what happened, but you can see the traceback below."
                 "\n\n[dim]For support, please open an issue at "
-                "[link=https://github.com/spectacles-ci/lkmlstyle/]"
-                "https://github.com/spectacles-ci/lkmlstyle/[/link]\n"
+                "[u blue link=https://github.com/spectacles-ci/lkmlstyle/]"
+                "https://github.com/spectacles-ci/lkmlstyle/[/]\n"
             )
             raise
 
