@@ -86,6 +86,12 @@ Similarly, if you'd like to focus on a few rules at a time, you can provide rule
 lkmlstyle repos/product-analytics/views/sessions.view.lkml --select D101
 ```
 
+### Configuring lkmlstyle with a config file
+
+Passing many rule codes at the command line can be tedious and hard to read. Instead, you can configure lkmlstyle with a YAML file in the root of your Looker project's repo.
+
+The config file must be named `lkmlstyle.yaml`. You can copy and modify the [example here](lkmlstyle.example.yaml), just change the name to remove "example" after you do.
+
 ## Overriding and adding new rules
 
 ### Modifying an existing rule
