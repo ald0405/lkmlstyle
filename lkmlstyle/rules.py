@@ -666,6 +666,19 @@ ALL_RULES = (
             ),
         ),
     ),
+    PatternMatchRule(
+        title="Include uses a wildcard",
+        code="I100",
+        rationale=(
+            "Including all views using a wildcard (e.g. *.view) slows down "
+            "LookML compilation and validation. "
+            "Instead, explicitly include the specific views that you need."
+        ),
+        select="include",
+        regex=r"\*\.view",
+        negative=True,
+        filters=tuple(),
+    ),
 )
 
 RULES_BY_CODE: dict[str, Rule] = {}

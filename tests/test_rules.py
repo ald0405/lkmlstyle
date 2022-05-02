@@ -295,3 +295,10 @@ def test_duplicate_views_rule_works_with_derived_table():
     }
     """
     assert not lkmlstyle.check(view, ruleset=get_rule_by_code("V112"))
+
+
+def test_wildcard_includes_not_allowed():
+    passes = 'include: "/views/orders.view.lkml"'
+    fails = 'include: "/views/*.view.lkml"'
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("I100"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("I100"))
