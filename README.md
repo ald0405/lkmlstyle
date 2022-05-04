@@ -76,7 +76,7 @@ If you see rules you'd like to ignore, you can add the `--ignore` option and the
 lkmlstyle repos/product-analytics/views/sessions.view.lkml --ignore D106 D107 M101
 ```
 
-**Tip**: If you find you're always ignoring certain rules, you can also adjust lkmlstyle's ruleset using a [config file](lkmlstyle.example.yaml) so you don't have to type them out every time.
+**Tip**: If you find you're always ignoring certain rules, you can also adjust lkmlstyle's ruleset using a [config file](#configuring-lkmlstyle-with-a-config-file) so you don't have to type them out every time.
 
 ### Isolating rules
 
