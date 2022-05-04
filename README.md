@@ -8,6 +8,12 @@ With lkmlstyle, you can:
  - [Modify existing rules by changing their YAML spec](#modifying-an-existing-rule)
  - Add new rules using simple YAML definitions
 
+### Why do we need another LookML linter?
+
+There are a couple open-source style checkers for LookML already, namely [Look At Me Sideways (LAMS)](https://github.com/looker-open-source/look-at-me-sideways) and [lookml-tools](https://github.com/ww-tech/lookml-tools). Why create another one?
+
+Both linters are pretty opinionated about the rules they enforce and can be difficult to customize or use in CI/CD. We believe there's an opportunity for a style checker that's easier to work with and customize for your team's needs.
+
 ## Installation
 
 lkmlstyle requires Python 3.10 or higher. To check your Python version, run `python --version`.
