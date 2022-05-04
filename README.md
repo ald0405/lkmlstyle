@@ -30,6 +30,22 @@ If the installation was successful, you should be able to run this command to se
 lkmlstyle rules
 ```
 
+The output should start like this:
+
+```
+                                                  lkmlstyle Rules                                                       
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃  Code   ┃ Rationale                                                                                              ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│  D100   │ Yesno dimension doesn't start with 'is_' or 'has_'                                                     │
+│         │                                                                                                        │
+│         │ Wording the name of a yesno dimension as a question makes it clear to the user what a yes or no value  │
+│         │ represents.                                                                                            │
+├─────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+
+...
+```
+
 ## Getting Started
 
 First, clone the Git repo for your Looker project to your local environment so lkmlstyle can find `.lkml` files in your environment.
