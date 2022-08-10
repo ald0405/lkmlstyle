@@ -106,7 +106,13 @@ class Rule:
 
     def selects(self, lineage: str) -> bool:
         """Given a lineage string, determine if this rule would select that node."""
-        return any(lineage.endswith(selector) for selector in self.select)
+        lineage_fields = lineage.split(".")
+        for selector in self.select:
+            components = selector.split(".")
+            if components == lineage_fields[-len(components) :]:
+                return True
+
+        return False
 
     def applies_to(self, node: SyntaxNode, lineage: str) -> bool:
         """Check a node against a rule's filters for relevance."""
