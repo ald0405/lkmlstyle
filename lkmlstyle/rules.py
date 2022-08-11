@@ -329,7 +329,7 @@ ALL_RULES = (
         ),
         select="view",
         filters=tuple(),
-        regex=r"^[_a-z0-9]+$",
+        regex=r"^\+?[_a-z0-9]+$",
     ),
     PatternMatchRule(
         title="Name of count measure doesn't start with 'count_'",

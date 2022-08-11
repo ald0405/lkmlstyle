@@ -302,3 +302,20 @@ def test_wildcard_includes_not_allowed():
     fails = 'include: "/views/*.view.lkml"'
     assert lkmlstyle.check(fails, ruleset=get_rule_by_code("I100"))
     assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("I100"))
+
+
+def test_view_names_should_be_snake_case():
+    passes = """
+    view: order_items {}
+    view: __order_items {}
+    view: +order_items {}
+    view: orderitems {}
+    """
+    fails = """
+    view: order_Items {}
+    view: OrderItems {}
+    view: orderItems {}
+    view: +orderItems {}
+    """
+    assert lkmlstyle.check(fails, ruleset=get_rule_by_code("V100"))
+    assert not lkmlstyle.check(passes, ruleset=get_rule_by_code("V100"))
